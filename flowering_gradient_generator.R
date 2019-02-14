@@ -12,16 +12,14 @@ spatialFloweringSampler = function(n,
                                    # po: presence only, pa: presence and absence
                                    fraction_precent=0.8,
                                    distribution_type='a',
-                                   # a: normalish curve, b: betaish curve, c: uniformish curve
+                                   # a: normal-ish curve, b: beta-ish curve, c: uniform-ish curve
                                    xlimits = c(0,1),
                                    ylimits = c(0,1),
                                    start_doy = 180,
                                    flowering_length = 30,
                                    flowering_gradient = 10/0.1){
   
-  spatial_transform = function(x,y){
-    
-  }
+  # Generate n points from a spatial domain of flowering
   
   # generate n random points on the x,y grid
   if(is.null(x) && is.null(y)){
