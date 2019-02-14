@@ -82,6 +82,46 @@ predict.PhenologyGridEstimator = function(model,
   
 }
 
+
+plot.PhenologyGridEstimator = function(model){
+  # Plot the boxes generated from the model
+  line_segments_left = with(model$boxes, data.frame(x = center_x - half_size,
+                                                    y = center_y + half_size,
+                                                    xend = center_x - half_size,
+                                                    yend = center_y - half_size))
+  line_segments_top = with(model$boxes, data.frame(x = center_x - half_size,
+                                                    y = center_y + half_size,
+                                                    xend = center_x + half_size,
+                                                    yend = center_y + half_size))
+  line_segments_right = with(model$boxes, data.frame(x = center_x + half_size,
+                                                    y = center_y + half_size,
+                                                    xend = center_x + half_size,
+                                                    yend = center_y - half_size))
+  line_segments_bottom = with(model$boxes, data.frame(x = center_x + half_size,
+                                                    y = center_y - half_size,
+                                                    xend = center_x - half_size,
+                                                    yend = center_y - half_size))
+  
+  boundary_box = dplyr::tribble(
+    ~x, ~y, ~xend, ~yend,
+    model$xlimits[1], model$ylimits[1], model$xlimits[2], model$ylimits[1], #bottom
+    model$xlimits[2], model$ylimits[1], model$xlimits[2], model$ylimits[2], #right
+    model$xlimits[2], model$ylimits[2], model$xlimits[1], model$ylimits[2], #top
+    model$xlimits[1], model$ylimits[2], model$xlimits[1], model$ylimits[1]  #left
+  )
+  
+  line_segments = line_segments_left %>%
+    bind_rows(line_segments_top) %>%
+    bind_rows(line_segments_right) %>%
+    bind_rows(line_segments_bottom)
+  
+  ggplot() + 
+    geom_segment(data=line_segments,aes(x=x, y=y, xend=xend, yend=yend)) +
+    geom_segment(data=boundary_box, aes(x=x, y=y, xend=xend, yend=yend), color='red', size=2, linetype='dashed')
+  
+  
+}
+
 #######################################
 #######################################
 # Helper Function
