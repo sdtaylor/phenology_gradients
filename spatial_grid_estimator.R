@@ -79,7 +79,7 @@ predict.PhenologyGridEstimator = function(model,
   
   point_estimates = purrr::pmap_df(doy_points[c('x','y')], estimate_metrics_from_model)
   
-  
+  return(dplyr::select(point_estimates, -x, -y))
 }
 
 
