@@ -60,10 +60,10 @@ spatialFloweringSampler = function(n,
   }
   
   # for each point, transform the probability according to the flowering gradient
-  y_center = ylimits[2] - ((ylimits[2] - ylimits[1])/2)
-  y_scaled = y - y_center
+  #y_center = ylimits[2] - ((ylimits[2] - ylimits[1])/2)
+  #y_scaled = y - y_center
   
-  doy = doy + round(y_scaled * flowering_gradient, 0)
+  doy = doy + round(y * flowering_gradient, 0)
   
   return(data_frame(x=x,y=y,doy=doy,flower_present=flower_present))
 }
