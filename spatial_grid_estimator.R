@@ -4,7 +4,6 @@ PhenologyGridEstimator = function(doy_points,
                                   n_boxes=100,
                                   max_box_size=0.3,
                                   min_box_size=0.2,
-                                  grain = 0.05,
                                   xlimits=c(0,1),
                                   ylimits=c(0,1)){
   # From a collection of georeferenced indicating the Julian day (DOY) of
@@ -18,7 +17,6 @@ PhenologyGridEstimator = function(doy_points,
   model_details$n_boxes = n_boxes
   model_details$max_box_size = max_box_size
   model_details$min_box_size = min_box_size
-  model_details$grain = grain
   model_details$xlimits = xlimits
   model_details$ylimits = ylimits
   
