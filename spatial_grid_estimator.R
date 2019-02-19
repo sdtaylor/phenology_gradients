@@ -13,6 +13,8 @@ PhenologyGridEstimator = function(doy_points,
   # Weibull method from Pearse et al. 2017 to estimate onset and end. 
   # Uses the mean doy for peak estimates. 
   
+  if(min_box_size>max_box_size){stop('min_box_size must be less than or equal to max_box_size')}
+  
   model_details = list()
   model_details$n_boxes = n_boxes
   model_details$max_box_size = max_box_size
@@ -34,7 +36,7 @@ PhenologyGridEstimator = function(doy_points,
     estimates = list()
     estimates$box_id = box_id
     estimates$n_points = nrow(doy_points)
-    if(estimates$n_points<3){
+    if(estimates$n_points<5){
       estimates$onset_estimate = NA
       estimates$end_estimate = NA
       estimates$peak_estimate = NA
