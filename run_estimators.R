@@ -12,7 +12,7 @@ n_cores = 10
 sample_sizes = c(300, 600)
 flowering_lengths = c(15,30,60)
 flowering_gradients = c(10/0.1,30/0.1)
-
+clustering = c(TRUE,FALSE)
 n_bootstrap = 2
 
 # Spatial model parameters
@@ -22,6 +22,23 @@ box_sizes = c(0.3, 0.6)
 all_estimates_file = 'results/all_estimates.csv'
 ###################################################
 ###################################################
+generate_clustered_points = function(n){
+  point_pattern = spatstat::rThomas(5, 0.1, n*1.5)
+  
+  # Spatstat will generate a random number of points, so from
+  # those choose the n points requested.
+  number_of_random_points = length(point_pattern$x)
+  if(number_of_random_points < n){
+    # If not enough random points were generated try again
+    return(generate_clustered_points(n))
+  } else {
+    random_selection = sample(1:number_of_random_points, size = n,replace = FALSE)
+    return(tibble(x=point_pattern$x[random_selection], y=point_pattern$y[random_selection]))
+  }
+}
+
+
+#####################################################
 # extract the slope estimates from a SpatialGridModel
 get_slope_estimates = function(spatial_model,
                                prediction_grid){
@@ -53,6 +70,7 @@ registerDoParallel(cl)
 all_parameter_combos = expand.grid(sample_size = sample_sizes,
                                    flowering_lengths = flowering_lengths,
                                    flowering_gradients = flowering_gradients,
+                                   clustering = clustering,
                                    bootstrap_i = 1:n_bootstrap)
 
 
@@ -64,13 +82,27 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
   this_sample_size = all_parameter_combos$sample_size[iteration_i]
   this_length = all_parameter_combos$flowering_lengths[iteration_i]
   this_gradient = all_parameter_combos$flowering_gradients[iteration_i]
+  do_clustering = all_parameter_combos$clustering[iteration_i]
   bootstrap_i = all_parameter_combos$bootstrap_i[iteration_i]
 
+  # The flowering sampler will generate completely random, and spatially
+  # uniform, points by default. If doing clustering this will pass in
+  # clusted points
+  if(do_clustering){
+    clustered_points = generate_clustered_points(this_sample_size)
+    x = clustered_points$x
+    y = clustered_points$y
+  } else {
+    x = NULL
+    y = NULL
+  }
+  
   simulated_sample_data = spatialFloweringSampler(n=this_sample_size,
                                                   distribution_type = 'a',
                                                   start_doy = 90,
                                                   flowering_length = this_length,
-                                                  flowering_gradient = this_gradient)
+                                                  flowering_gradient = this_gradient,
+                                                  x=x,y=y)
 
   for(this_n_boxes in n_boxess){
     for(this_box_size in box_sizes){
