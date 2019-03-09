@@ -65,5 +65,8 @@ spatialFloweringSampler = function(n,
   
   doy = doy + round(y * flowering_gradient, 0)
   
-  return(data_frame(x=x,y=y,doy=doy,flower_present=flower_present))
+  true_start_doy = rep.int(start_doy, n)
+  true_start_doy = true_start_doy + round(y * flowering_gradient, 0)
+  
+  return(data_frame(x=x,y=y,doy=doy,flower_present=flower_present, true_start_doy=true_start_doy))
 }
