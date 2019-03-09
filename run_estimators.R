@@ -22,18 +22,24 @@ box_sizes = c(0.3, 0.6)
 all_estimates_file = 'results/all_estimates.csv'
 ###################################################
 ###################################################
-generate_clustered_points = function(n){
-  point_pattern = spatstat::rThomas(5, 0.1, n*1.5)
+generate_clustered_points = function(n, uniform_random_percent=0.2){
+  uniform_n = floor(n * uniform_random_percent)
+  clumped_n = n - uniform_n
+  point_pattern = spatstat::rThomas(5, 0.05, clumped_n*1.5)
   
   # Spatstat will generate a random number of points, so from
   # those choose the n points requested.
   number_of_random_points = length(point_pattern$x)
-  if(number_of_random_points < n){
+  if(number_of_random_points < clumped_n){
     # If not enough random points were generated try again
-    return(generate_clustered_points(n))
+    return(generate_clustered_points(clumped_n, uniform_random_percent = uniform_random_percent))
   } else {
-    random_selection = sample(1:number_of_random_points, size = n,replace = FALSE)
-    return(tibble(x=point_pattern$x[random_selection], y=point_pattern$y[random_selection]))
+    uniform_x = runif(n=uniform_n, min=0, max=1)
+    uniform_y = runif(n=uniform_n, min=0, max=1)
+    random_selection = sample(1:number_of_random_points, size = clumped_n,replace = FALSE)
+    x = c(point_pattern$x[random_selection], uniform_x)
+    y = c(point_pattern$y[random_selection], uniform_y)
+    return(tibble(x=x, y=y))
   }
 }
 
