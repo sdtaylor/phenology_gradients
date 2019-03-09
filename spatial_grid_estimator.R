@@ -5,8 +5,9 @@ PhenologyGridEstimator = function(doy_points,
                                   max_box_size=0.3,
                                   min_box_size=0.2,
                                   xlimits=c(0,1),
-                                  ylimits=c(0,1)){
-  # From a collection of georeferenced indicating the Julian day (DOY) of
+                                  ylimits=c(0,1),
+                                  edge_buffer=0.1){
+  # From a collection of georeferenced  points indicating the Julian day (DOY) of
   # observing a flower, make a model estimating the onset,peak, and end of 
   # flowering across the spatial extent.
   # Uses bag of boxes strategy from Fink et al. 2010 combined with the 
@@ -14,6 +15,13 @@ PhenologyGridEstimator = function(doy_points,
   # Uses the mean doy for peak estimates. 
   
   if(min_box_size>max_box_size){stop('min_box_size must be less than or equal to max_box_size')}
+  if((xlimits[2]<xlimits[1]) | 
+     (ylimits[2]<ylimits[1]) | 
+     (length(xlimits) !=2  )    |
+     (length(ylimits) !=2 )) {stop(paste('xlimits and ylimits must each be of length 2, and have the lower',
+                                       'and upper bounds in the 1st and 2nd nposition, respectively.'))}
+  
+  
   
   model_details = list()
   model_details$n_boxes = n_boxes
