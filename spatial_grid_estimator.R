@@ -91,25 +91,13 @@ predict.PhenologyGridEstimator = function(model,
 }
 
 
-plot.PhenologyGridEstimator = function(model){
+plot.PhenologyGridEstimator = function(model,
+                                       plot_type='boxes'){
+  # box_types: 
+  #   boxes: draw all the boxes from the model on the x,y grid, 
+  #          with a red dashed line marking the boundery
+  #   density: plot the density (# of boxes) for all points
   # Plot the boxes generated from the model
-  line_segments_left = with(model$boxes, data.frame(x = center_x - half_size,
-                                                    y = center_y + half_size,
-                                                    xend = center_x - half_size,
-                                                    yend = center_y - half_size))
-  line_segments_top = with(model$boxes, data.frame(x = center_x - half_size,
-                                                    y = center_y + half_size,
-                                                    xend = center_x + half_size,
-                                                    yend = center_y + half_size))
-  line_segments_right = with(model$boxes, data.frame(x = center_x + half_size,
-                                                    y = center_y + half_size,
-                                                    xend = center_x + half_size,
-                                                    yend = center_y - half_size))
-  line_segments_bottom = with(model$boxes, data.frame(x = center_x + half_size,
-                                                    y = center_y - half_size,
-                                                    xend = center_x - half_size,
-                                                    yend = center_y - half_size))
-  
   boundary_box = dplyr::tribble(
     ~x, ~y, ~xend, ~yend,
     model$xlimits[1], model$ylimits[1], model$xlimits[2], model$ylimits[1], #bottom
@@ -118,15 +106,54 @@ plot.PhenologyGridEstimator = function(model){
     model$xlimits[1], model$ylimits[2], model$xlimits[1], model$ylimits[1]  #left
   )
   
-  line_segments = line_segments_left %>%
-    bind_rows(line_segments_top) %>%
-    bind_rows(line_segments_right) %>%
-    bind_rows(line_segments_bottom)
+  if(plot_type=='boxes'){
+    line_segments_left = with(model$boxes, data.frame(x = center_x - half_size,
+                                                      y = center_y + half_size,
+                                                      xend = center_x - half_size,
+                                                      yend = center_y - half_size))
+    line_segments_top = with(model$boxes, data.frame(x = center_x - half_size,
+                                                      y = center_y + half_size,
+                                                      xend = center_x + half_size,
+                                                      yend = center_y + half_size))
+    line_segments_right = with(model$boxes, data.frame(x = center_x + half_size,
+                                                      y = center_y + half_size,
+                                                      xend = center_x + half_size,
+                                                      yend = center_y - half_size))
+    line_segments_bottom = with(model$boxes, data.frame(x = center_x + half_size,
+                                                      y = center_y - half_size,
+                                                      xend = center_x - half_size,
+                                                      yend = center_y - half_size))
+    
+    line_segments = line_segments_left %>%
+      bind_rows(line_segments_top) %>%
+      bind_rows(line_segments_right) %>%
+      bind_rows(line_segments_bottom)
+    
+    ggplot() + 
+      geom_segment(data=line_segments,aes(x=x, y=y, xend=xend, yend=yend)) +
+      geom_segment(data=boundary_box, aes(x=x, y=y, xend=xend, yend=yend), color='red', size=2, linetype='dashed')
   
-  ggplot() + 
-    geom_segment(data=line_segments,aes(x=x, y=y, xend=xend, yend=yend)) +
-    geom_segment(data=boundary_box, aes(x=x, y=y, xend=xend, yend=yend), color='red', size=2, linetype='dashed')
-  
+  } else if(plot_type=='density'){
+    # An evenly spaced grid of 2500 points on the model's x,y plane
+    equal_spaced_grid = expand.grid(x=seq(model$xlimits[1],model$xlimits[2],by=(model$xlimits[2]-model$xlimits[1])/50),
+                                    y=seq(model$ylimits[1],model$ylimits[2],by=(model$xlimits[2]-model$xlimits[1])/50))
+    
+    # count the boxes behind each point
+    box_count = function(x,y){
+      return(nrow(subset_boxes_to_point(x=x,y=y,boxes=model$boxes)))
+    }
+    
+    equal_spaced_grid = equal_spaced_grid %>%
+      mutate(n_boxes = map2_int(x,y,box_count))
+    
+    ggplot(equal_spaced_grid, aes(x=x,y=y,fill=n_boxes)) + 
+      geom_raster() +
+      scale_fill_viridis_c(limits=c(min(equal_spaced_grid$n_boxes),max(equal_spaced_grid$n_boxes))) + 
+      geom_segment(data=boundary_box, aes(x=x, y=y, xend=xend, yend=yend), color='red', size=2, linetype='dashed', inherit.aes = FALSE)
+    
+  } else {
+    stop(paste0('unknown plot type: ',plot_type))
+  }
   
 }
 
