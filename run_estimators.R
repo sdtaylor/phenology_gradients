@@ -127,6 +127,7 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
         slope_estimates$sample_size = this_sample_size
         slope_estimates$flowering_length = this_length
         slope_estimates$flowering_gradient = this_gradient
+        slope_estimates$clustering = do_clustering
         slope_estimates$bootstrap_i = bootstrap_i
         slope_estimates$n_boxes = this_n_boxes
         slope_estimates$box_size = this_box_size
