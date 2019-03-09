@@ -10,14 +10,15 @@ n_cores = 10
 
 # Sampling parameters
 sample_sizes = c(300, 600)
-flowering_lengths = c(15,30,60)
-flowering_gradients = c(10/0.1,30/0.1)
+flowering_lengths = c(15,30)
+flowering_gradients = c(10/0.1, 20/0.1, 30/0.1)
 clustering = c(TRUE,FALSE)
 n_bootstrap = 2
 
 # Spatial model parameters
-n_boxess = c(50,100)
+n_boxess = c(200)
 box_sizes = c(0.3, 0.6)
+edge_buffers = c(0, 0.1, 0.2)
 
 all_estimates_file = 'results/all_estimates.csv'
 ###################################################
@@ -112,25 +113,28 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
 
   for(this_n_boxes in n_boxess){
     for(this_box_size in box_sizes){
+      for(this_edge_buffer in edge_buffers){
       
-      # Model estimating onset, peak, and end of flowering across space
-      spatial_estimator = PhenologyGridEstimator(doy_points = simulated_sample_data,
-                                                 n_boxes = this_n_boxes,
-                                                 max_box_size = this_box_size, min_box_size = this_box_size)
-      
-      slope_estimates = get_slope_estimates(spatial_estimator,
-                                            prediction_grid = prediction_grid)
-      
-      slope_estimates$sample_size = this_sample_size
-      slope_estimates$flowering_length = this_length
-      slope_estimates$flowering_gradient = this_gradient
-      slope_estimates$bootstrap_i = bootstrap_i
-      slope_estimates$n_boxes = this_n_boxes
-      slope_estimates$box_size = this_box_size
-      
-      this_iteration_estimates = this_iteration_estimates %>%
-        bind_rows(slope_estimates)
-    
+        # Model estimating onset, peak, and end of flowering across space
+        spatial_estimator = PhenologyGridEstimator(doy_points = simulated_sample_data,
+                                                   n_boxes = this_n_boxes,
+                                                   max_box_size = this_box_size, min_box_size = this_box_size,
+                                                   edge_buffer = this_edge_buffer)
+        
+        slope_estimates = get_slope_estimates(spatial_estimator,
+                                              prediction_grid = prediction_grid)
+        
+        slope_estimates$sample_size = this_sample_size
+        slope_estimates$flowering_length = this_length
+        slope_estimates$flowering_gradient = this_gradient
+        slope_estimates$bootstrap_i = bootstrap_i
+        slope_estimates$n_boxes = this_n_boxes
+        slope_estimates$box_size = this_box_size
+        slope_estimates$edge_buffer = this_edge_buffer
+        
+        this_iteration_estimates = this_iteration_estimates %>%
+          bind_rows(slope_estimates)
+      }
       }
   }
   return(this_iteration_estimates)
