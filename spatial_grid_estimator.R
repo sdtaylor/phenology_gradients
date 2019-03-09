@@ -6,7 +6,9 @@ PhenologyGridEstimator = function(doy_points,
                                   min_box_size=0.2,
                                   xlimits=c(0,1),
                                   ylimits=c(0,1),
-                                  edge_buffer=0.1){
+                                  edge_buffer=0.1,
+                                  not_enough_data_fallback='use_na'
+                                  ){
   # From a collection of georeferenced  points indicating the Julian day (DOY) of
   # observing a flower, make a model estimating the onset,peak, and end of 
   # flowering across the spatial extent.
@@ -17,11 +19,9 @@ PhenologyGridEstimator = function(doy_points,
   if(min_box_size>max_box_size){stop('min_box_size must be less than or equal to max_box_size')}
   if((xlimits[2]<xlimits[1]) | 
      (ylimits[2]<ylimits[1]) | 
-     (length(xlimits) !=2  )    |
-     (length(ylimits) !=2 )) {stop(paste('xlimits and ylimits must each be of length 2, and have the lower',
-                                       'and upper bounds in the 1st and 2nd nposition, respectively.'))}
-  
-  
+     (length(xlimits) !=2  ) |
+     (length(ylimits) !=2  )){stop(paste('xlimits and ylimits must each be of length 2, and have the lower',
+                                         'and upper bounds in the 1st and 2nd nposition, respectively.'))}
   
   model_details = list()
   model_details$n_boxes = n_boxes
@@ -29,6 +29,8 @@ PhenologyGridEstimator = function(doy_points,
   model_details$min_box_size = min_box_size
   model_details$xlimits = xlimits
   model_details$ylimits = ylimits
+  model_details$edge_buffer = edge_buffer
+  model_details$not_enough_data_fallback = not_enough_data_fallback
   
   boxes = data.frame(box_id=1:n_boxes)
   boxes$size = runif(n_boxes, min=min_box_size, max=max_box_size)
@@ -43,16 +45,24 @@ PhenologyGridEstimator = function(doy_points,
                                              box_half_size = half_size)
     estimates = list()
     estimates$box_id = box_id
-    estimates$n_points = nrow(doy_points)
-    if(estimates$n_points<5){
-      estimates$onset_estimate = NA
-      estimates$end_estimate = NA
-      estimates$peak_estimate = NA
-    } else{
-      estimates$onset_estimate = as.numeric(weib.limit(doy_points_subset$doy)[1])
-      estimates$end_estimate = as.numeric(weib.limit(doy_points_subset$doy*-1)[1]) * -1
-      estimates$peak_estimate = mean(doy_points_subset$doy)
+    estimates$n_points = nrow(doy_points_subset)
+    
+    # If the weib.limit fails (due to low sample size), then revert to
+    # using the first/last observed of the subset within a box
+    if(not_enough_data_fallback=='first_observed'){
+      fallback = function(doy){min(doy)}
+    } else if(not_enough_data_fallback=='use_na'){
+      fallback = function(doy){NA}
+    } else {
+      stop(paste('unknown option for not_enough_data_fallback: ',not_enough_data_fallback))
     }
+    
+    estimates$onset_estimate = tryCatch(as.numeric(weib.limit(doy_points_subset$doy)[1]),
+                                        error = function(cond){fallback(doy_points_subset$doy)})
+    estimates$end_estimate   = tryCatch(as.numeric(weib.limit(doy_points_subset$doy*-1)[1]) * -1,
+                                        error = function(cond){fallback(doy_points_subset$doy * -1) * -1})
+    estimates$peak_estimate  = mean(doy_points_subset$doy)
+    
     return(estimates)
   }
   
@@ -71,6 +81,14 @@ PhenologyGridEstimator = function(doy_points,
 predict.PhenologyGridEstimator = function(model,
                                           doy_points){
   
+  outside_buffer = function(x,y){
+    !within_bounds2(x,y,
+                    x_low  = model$xlimits[1] + model$edge_buffer,
+                    x_high = model$xlimits[2] - model$edge_buffer,
+                    y_low  = model$ylimits[1] + model$edge_buffer,
+                    y_high = model$ylimits[2] - model$edge_buffer)
+  }
+  
   estimate_metrics_from_model = function(x, y){
     box_subset = subset_boxes_to_point(x = x,
                                        y = y,
@@ -79,15 +97,28 @@ predict.PhenologyGridEstimator = function(model,
     estimates = list()
     estimates$x = x
     estimates$y = y
-    estimates$onset_estimate = mean(box_subset$onset_estimate, na.rm=T)
-    estimates$end_estimate = mean(box_subset$end_estimate, na.rm=T)
-    estimates$peak_estimate = mean(box_subset$peak_estimate, na.rm=T)
+    if(outside_buffer(x,y)){
+      estimates$onset_estimate = NA
+      estimates$end_estimate = NA
+      estimates$peak_estimate = NA
+      estimates$outside_buffer = TRUE
+    } else {
+      estimates$onset_estimate = mean(box_subset$onset_estimate, na.rm=T)
+      estimates$end_estimate = mean(box_subset$end_estimate, na.rm=T)
+      estimates$peak_estimate = mean(box_subset$peak_estimate, na.rm=T)
+      estimates$outside_buffer = FALSE
+    }
     return(estimates)
   }
   
   point_estimates = purrr::pmap_df(doy_points[c('x','y')], estimate_metrics_from_model)
   
-  return(dplyr::select(point_estimates, -x, -y))
+  outside_buffer_count = sum(point_estimates$outside_buffer)
+  if(outside_buffer_count>0){
+    warning(paste(outside_buffer_count,'points were outside the buffer and could not be estimated.'))
+  }
+  
+  return(dplyr::select(point_estimates, -x, -y, -outside_buffer))
 }
 
 
@@ -172,6 +203,7 @@ subset_points_to_box = function(points, box_center_x, box_center_y, box_half_siz
            x <= box_center_x + box_half_size,
            y > box_center_y - box_half_size,
            y <= box_center_y + box_half_size)
+  
 }
 
 subset_boxes_to_point = function(x,y, boxes){
@@ -185,4 +217,12 @@ subset_boxes_to_point = function(x,y, boxes){
            center_y + half_size >= y)
 }
 
+within_bounds = function(x, low, high){
+  x >= low & x <= high
+}
 
+within_bounds2 = function(x, y, 
+                          x_low, x_high,
+                          y_low, y_high){
+  within_bounds(x, x_low, x_high) & within_bounds(y, y_low, y_high)
+}
