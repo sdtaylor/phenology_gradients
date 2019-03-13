@@ -1,9 +1,12 @@
 source('weibull.R')
+library(dplyr)
+library(purrr)
 
 PhenologyGridEstimator = function(doy_points,
-                                  n_boxes=100,
-                                  max_box_size=0.3,
-                                  min_box_size=0.2,
+                                  stratum_size_x=0.1,
+                                  stratum_size_y=0.1,
+                                  boxes_per_stratum=5,
+                                  box_size=0.3,
                                   xlimits=c(0,1),
                                   ylimits=c(0,1),
                                   edge_buffer=0.1,
@@ -16,7 +19,6 @@ PhenologyGridEstimator = function(doy_points,
   # Weibull method from Pearse et al. 2017 to estimate onset and end. 
   # Uses the mean doy for peak estimates. 
   
-  if(min_box_size>max_box_size){stop('min_box_size must be less than or equal to max_box_size')}
   if((xlimits[2]<xlimits[1]) | 
      (ylimits[2]<ylimits[1]) | 
      (length(xlimits) !=2  ) |
@@ -24,19 +26,36 @@ PhenologyGridEstimator = function(doy_points,
                                          'and upper bounds in the 1st and 2nd nposition, respectively.'))}
   
   model_details = list()
-  model_details$n_boxes = n_boxes
-  model_details$max_box_size = max_box_size
-  model_details$min_box_size = min_box_size
+  model_details$stratum_size_x = stratum_size_x
+  model_details$stratum_size_y = stratum_size_y
+  model_details$boxes_per_stratum = boxes_per_stratum
+  model_details$box_size = box_size
   model_details$xlimits = xlimits
   model_details$ylimits = ylimits
   model_details$edge_buffer = edge_buffer
   model_details$not_enough_data_fallback = not_enough_data_fallback
+ 
+  generate_centers_within_stratum = function(min,max){
+    runif(n = boxes_per_stratum, min, max)
+  }
   
-  boxes = data.frame(box_id=1:n_boxes)
-  boxes$size = runif(n_boxes, min=min_box_size, max=max_box_size)
+  # This data.frame describes the bottom left coordinate of the stratum cells.
+  stratum_cells = expand.grid(x = seq(xlimits[1], xlimits[2] - stratum_size_x, by=stratum_size_x),
+                              y = seq(ylimits[1], ylimits[2] - stratum_size_y, by=stratum_size_y))
+  
+  # uniform random centers, with each stratum cell getting an equal number.
+  center_x = purrr::map2(stratum_cells$x, stratum_cells$x+stratum_size_x, generate_centers_within_stratum) %>%
+    purrr::flatten_dbl()
+  center_y = purrr::map2(stratum_cells$y, stratum_cells$y+stratum_size_y, generate_centers_within_stratum) %>%
+    purrr::flatten_dbl()
+  
+  boxes = dplyr::tibble(center_x = center_x,
+                        center_y = center_y)
+  total_boxes = nrow(boxes)
+  
+  boxes$box_id = 1:total_boxes
+  boxes$size = box_size
   boxes$half_size = boxes$size/2
-  boxes$center_x = runif(n=n_boxes, min=xlimits[1], max=xlimits[2])
-  boxes$center_y = runif(n=n_boxes, min=ylimits[1], max=ylimits[2])
   
   estimate_metrics = function(box_id, size, half_size, center_x, center_y){
     doy_points_subset = subset_points_to_box(doy_points, 
