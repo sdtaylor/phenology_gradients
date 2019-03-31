@@ -26,6 +26,7 @@ PhenologyGridEstimator = function(doy_points,
                                          'and upper bounds in the 1st and 2nd nposition, respectively.'))}
   
   model_details = list()
+  model_details$doy_points = doy_points
   model_details$stratum_size_x = stratum_size_x
   model_details$stratum_size_y = stratum_size_y
   model_details$boxes_per_stratum = boxes_per_stratum
