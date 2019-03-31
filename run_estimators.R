@@ -13,7 +13,11 @@ sample_sizes = c(300, 600)
 flowering_lengths = c(30)
 flowering_gradients = c(10/0.1, 30/0.1)
 clustering = c(TRUE)
+<<<<<<< HEAD
 n_bootstrap = 5
+=======
+n_bootstrap = 4
+>>>>>>> 06204b61d1863aa54aeead512d06d3776b29ca83
 
 # Spatial model parameters
 #n_boxess = c(200)
@@ -26,9 +30,14 @@ model_dir = paste0('results/models/',current_time,'/')
 dir.create(model_dir, recursive = T)
 
 model_run_note = "
+<<<<<<< HEAD
 using stratified random sampling.
 not testing non-clustered samples.
 first time saving data in models
+=======
+running for the first time w/ the grid estimator using stratified random sampling.
+not testing non-clustered samples.
+>>>>>>> 06204b61d1863aa54aeead512d06d3776b29ca83
 "
 
 cat(model_run_note, file=paste0(model_dir,'notes.txt'))
