@@ -106,3 +106,21 @@ spatialFloweringSampler = function(n,
   
   return(data_frame(x=x,y=y,doy=doy,flower_present=flower_present, true_start_doy=true_start_doy))
 }
+
+spatialFloweringGrid = function(xlimits = c(0,1),
+                                ylimits = c(0,1),
+                                cell_size = 0.05,
+                                start_doy = 180,
+                                flowering_length = 30,
+                                flowering_gradient = 10/0.1){
+  # Generate an x/y grid of the flowering gradient.
+  # Returns a data.frame of:
+  
+  #x, y, onset
+  full_grid = expand.grid(x=seq(xlimits[1], xlimits[2], by=cell_size),
+                          y=seq(ylimits[1], ylimits[2], by=cell_size))
+  
+  full_grid$onset = start_doy + round(full_grid$y * flowering_gradient, 0)
+  
+  return(full_grid)
+}
