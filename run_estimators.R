@@ -10,14 +10,14 @@ n_cores = 2
 
 # Sampling parameters
 sample_sizes = c(300, 600)
-flowering_lengths = c(30)
-flowering_gradients = c(10/0.1, 30/0.1)
+flowering_lengths = c(15,30)
+flowering_gradients = c(
+  # slope of lm(sos~latitude) from Melaas et al. 2018 / scale  of simulated scale
+  3.36/0.1, 
+  # Half the above, representing a more uniform spatial gradient
+  1.68/0.1)
 clustering = c(TRUE)
-<<<<<<< HEAD
 n_bootstrap = 5
-=======
-n_bootstrap = 4
->>>>>>> 06204b61d1863aa54aeead512d06d3776b29ca83
 
 # Spatial model parameters
 #n_boxess = c(200)
@@ -30,14 +30,7 @@ model_dir = paste0('results/models/',current_time,'/')
 dir.create(model_dir, recursive = T)
 
 model_run_note = "
-<<<<<<< HEAD
-using stratified random sampling.
-not testing non-clustered samples.
-first time saving data in models
-=======
-running for the first time w/ the grid estimator using stratified random sampling.
-not testing non-clustered samples.
->>>>>>> 06204b61d1863aa54aeead512d06d3776b29ca83
+using more realistic gradients with landsat start of season estimates from Melaas et al. 2018 data (10.1002/2017GL076933)
 "
 
 cat(model_run_note, file=paste0(model_dir,'notes.txt'))
