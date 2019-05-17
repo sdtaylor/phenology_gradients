@@ -32,6 +32,18 @@ generate_clustered_points = function(n,
   }
 }
 
+# Generate a non-linear spatial gradient
+# Random draws from a spatial model with a nugget of 0, range of 100.
+# x and y are coordinates and thus should be equal length.
+# returns a vector of the same length with values between 0-1 representing
+# a spatially correlated random field
+generate_random_spatial_gradient = function(x,y){
+  g.dummy = gstat::gstat(formula=z~1, locations=~x+y, dummy=T, beta=1, model=vgm(psill=0.025,model="Exp",range=100, nugget = 0), nmax=20)
+  p = predict(g.dummy, newdata=data_frame(x=x*100,y=y*100), nsim=1)$sim1
+  p = (p-min(p)) / (max(p) - min(p))
+  return(p)
+}
+
 spatialFloweringSampler = function(n,
                                    x=NULL,
                                    y=NULL,
@@ -45,6 +57,9 @@ spatialFloweringSampler = function(n,
                                    start_doy = 180,
                                    flowering_length = 30,
                                    flowering_gradient = 10/0.1,
+                                   spatial_gradient_type = 'linear',
+                                   # 'linear': gradient is a functions of the y axis, 'non-linear': gradient is a 
+                                   # spatially random.
                                    clustering=FALSE,
                                    clustering_uniform_random_percent=0.2){
   
@@ -99,7 +114,14 @@ spatialFloweringSampler = function(n,
   #y_center = ylimits[2] - ((ylimits[2] - ylimits[1])/2)
   #y_scaled = y - y_center
   
-  doy = doy + round(y * flowering_gradient, 0)
+  if(spatial_gradient_type == 'linear'){
+    doy = doy + round(y*flowering_gradient, 0) 
+  } else if(spatial_gradient_type == 'non-linear'){
+    non_linear_gradient = generate_random_spatial_gradient(x=x,y=y)
+    doy = doy + round(non_linear_gradient*flowering_gradient, 0) 
+  } else {
+    stop(paste0('unknown spatial gradient: ',spatial_gradient_type))
+  }
   
   true_start_doy = rep.int(start_doy, n)
   true_start_doy = true_start_doy + round(y * flowering_gradient, 0)
