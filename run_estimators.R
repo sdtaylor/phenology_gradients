@@ -16,6 +16,7 @@ flowering_gradients = c(
   3.36/0.1, 
   # Half the above, representing a more uniform spatial gradient
   1.68/0.1)
+spatial_gradient_types = c('linear','non-linear')
 clustering = c(TRUE)
 n_bootstrap = 5
 
@@ -31,6 +32,7 @@ dir.create(model_dir, recursive = T)
 
 model_run_note = "
 using more realistic gradients with landsat start of season estimates from Melaas et al. 2018 data (10.1002/2017GL076933)
+add non-linear spatial gradients
 "
 
 cat(model_run_note, file=paste0(model_dir,'notes.txt'))
@@ -66,6 +68,7 @@ registerDoParallel(cl)
 all_parameter_combos = expand.grid(sample_size = sample_sizes,
                                    flowering_lengths = flowering_lengths,
                                    flowering_gradients = flowering_gradients,
+                                   spatial_gradient_types = spatial_gradient_types,
                                    clustering = clustering,
                                    
                                    box_size = box_sizes,
@@ -84,6 +87,7 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
   this_sample_size = all_parameter_combos$sample_size[iteration_i]
   this_length = all_parameter_combos$flowering_lengths[iteration_i]
   this_gradient = all_parameter_combos$flowering_gradients[iteration_i]
+  this_gradient_type = all_parameter_combos$spatial_gradient_types
   do_clustering = all_parameter_combos$clustering[iteration_i]
 
   this_box_size = all_parameter_combos$box_size[iteration_i]
@@ -98,6 +102,7 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
                                                   start_doy = 90,
                                                   flowering_length = this_length,
                                                   flowering_gradient = this_gradient,
+                                                  spatial_gradient_type = this_gradient_type,
                                                   clustering=do_clustering)
 
 
