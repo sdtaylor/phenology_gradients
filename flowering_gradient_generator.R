@@ -33,15 +33,39 @@ generate_clustered_points = function(n,
 }
 
 # Generate a non-linear spatial gradient
-# Random draws from a spatial model with a nugget of 0, range of 100.
+# Random draws from a spatial model.
 # x and y are coordinates and thus should be equal length.
 # returns a vector of the same length with values between 0-1 representing
 # a spatially correlated random field
-generate_random_spatial_gradient = function(x,y){
-  g.dummy = gstat::gstat(formula=z~1, locations=~x+y, dummy=T, beta=1, model=vgm(psill=0.025,model="Exp",range=100, nugget = 0), nmax=20)
-  p = predict(g.dummy, newdata=data_frame(x=x*100,y=y*100), nsim=1)$sim1
-  p = (p-min(p)) / (max(p) - min(p))
-  return(p)
+generate_random_spatial_gradient = function(x,y,seed=NULL){
+  # The random surface generated depends on the seed as well as the unique set
+  # of points used in predict(variogram_model,...). This functions needs to be
+  # able to reproduce the same random surfrance regardless of the points used.
+  # Thus it uses the fixed_grid, which combined with the same seed will produce
+  # the same random surface. The points of interest (x,y in the arguments) are
+  # then calculated from the nearest neighbor of the fixed grid.
+  if(!is.null(seed)){
+    set.seed(seed)
+  }
+  fixed_grid = expand.grid(x=seq(0,1,0.01),
+                           y=seq(0,1,0.01))
+  
+  varigram_model = gstat::gstat(formula=z~1, locations=~x+y, dummy=T, beta=0.5, nmax=20,
+                                model=gstat::vgm(psill=0.025,model="Gau",range=0.6, nugget = 0))
+  p = predict(varigram_model, newdata=fixed_grid, nsim=1)$sim1
+  p = (p-min(p)) / (max(p) - min(p)) # scale to 0-1
+  
+  # in spatstat::nnwhich() all the coordinates, both from the fixed_grid and the sample
+  # coordinates x,y need to be input all at once. coordinate_sources differentiates them. 
+  coordinate_sources = factor(c(rep('grid_point',nrow(fixed_grid)),rep('sample_point',length(x))))
+  
+  nearest_point = spatstat::nnwhich(c(fixed_grid$x,x),c(fixed_grid$y,y), by=coordinate_sources)
+  # 2 columns returned. One for the nearest grid point, one for the nearest 
+  # sample point. 
+  if(colnames(nearest_point)[1]!='grid_point'){stop('grid point vs data point alignment not working')}
+  is_sample_point = coordinate_sources=='sample_point'
+  
+  return(p[nearest_point[is_sample_point,1]])
 }
 
 spatialFloweringSampler = function(n,
@@ -61,10 +85,14 @@ spatialFloweringSampler = function(n,
                                    # 'linear': gradient is a functions of the y axis, 'non-linear': gradient is a 
                                    # spatially random.
                                    clustering=FALSE,
-                                   clustering_uniform_random_percent=0.2){
-  
+                                   clustering_uniform_random_percent=0.2,
+                                   seed=NULL){
   # Generate n points from a spatial domain of flowering
-    
+  
+  if(!is.null(seed)){
+    set.seed(seed)
+  }
+  
   if(clustering) {
     clustered_points = generate_clustered_points(n=n,
                                                  xlimits=xlimits,ylimits=ylimits,
@@ -92,41 +120,38 @@ spatialFloweringSampler = function(n,
     stop('type c not implemented yet')
   }
   
-  doy = sample(1:365)
-  
   # presences and absences included
   if(sample_type=='pa'){
     num_presence = ceiling(n*fraction_precent)
     num_absence  = n - num_presence
     
-    doy =  sample(1:365, size=num_presence, replace=T, prob = doy_probabilites)
-    doy =  c(doy,sample(1:365, size=num_absence, replace=T, prob = max(doy_probabilites) - doy_probabilites))
+    sampled_doy =  sample(1:365, size=num_presence, replace=T, prob = doy_probabilites)
+    sampled_doy =  c(sampled_doy,sample(1:365, size=num_absence, replace=T, prob = max(doy_probabilites) - doy_probabilites))
     flower_present = c(rep.int(1,num_presence),rep.int(0,num_absence))
   # only presences
   } else if(sample_type=='po'){
-    doy = sample(1:365, size=n, replace=T, prob = doy_probabilites)
+    sampled_doy = sample(1:365, size=n, replace=T, prob = doy_probabilites)
     flower_present = rep.int(1,n)
   } else {
     stop(paste0('unknown sample type: ',sample_type))
   }
   
-  # for each point, transform the probability according to the flowering gradient
-  #y_center = ylimits[2] - ((ylimits[2] - ylimits[1])/2)
-  #y_scaled = y - y_center
+  true_start_doy = rep.int(start_doy, n)
   
   if(spatial_gradient_type == 'linear'){
-    doy = doy + round(y*flowering_gradient, 0) 
+    sampled_doy = sampled_doy + round(y*flowering_gradient, 0)
+    true_start_doy = true_start_doy + round(y * flowering_gradient, 0)
+    
   } else if(spatial_gradient_type == 'non-linear'){
-    non_linear_gradient = generate_random_spatial_gradient(x=x,y=y)
-    doy = doy + round(non_linear_gradient*flowering_gradient, 0) 
+    non_linear_gradient = generate_random_spatial_gradient(x=x,y=y, seed=seed)
+    sampled_doy = sampled_doy + round(non_linear_gradient*flowering_gradient, 0) 
+    true_start_doy = true_start_doy + round(non_linear_gradient * flowering_gradient, 0)
+    
   } else {
     stop(paste0('unknown spatial gradient: ',spatial_gradient_type))
   }
   
-  true_start_doy = rep.int(start_doy, n)
-  true_start_doy = true_start_doy + round(y * flowering_gradient, 0)
-  
-  return(data_frame(x=x,y=y,doy=doy,flower_present=flower_present, true_start_doy=true_start_doy))
+  return(data_frame(x=x,y=y,doy=sampled_doy,flower_present=flower_present, true_start_doy=true_start_doy))
 }
 
 spatialFloweringGrid = function(xlimits = c(0,1),
@@ -134,15 +159,27 @@ spatialFloweringGrid = function(xlimits = c(0,1),
                                 cell_size = 0.05,
                                 start_doy = 180,
                                 flowering_length = 30,
-                                flowering_gradient = 10/0.1){
+                                flowering_gradient = 10/0.1,
+                                spatial_gradient_type = 'linear',
+                                seed=NULL){
   # Generate an x/y grid of the flowering gradient.
   # Returns a data.frame of:
-  
   #x, y, onset
+  
   full_grid = expand.grid(x=seq(xlimits[1], xlimits[2], by=cell_size),
                           y=seq(ylimits[1], ylimits[2], by=cell_size))
   
-  full_grid$onset = start_doy + round(full_grid$y * flowering_gradient, 0)
-  
+  if(spatial_gradient_type == 'linear'){
+    full_grid$onset = start_doy + round(full_grid$y * flowering_gradient, 0)
+
+  } else if(spatial_gradient_type == 'non-linear'){
+    if(is.null(seed)){stop('Seed must be set if generating non-linear spatial gradient')}
+    non_linear_gradient = generate_random_spatial_gradient(x=full_grid$x,y=full_grid$y, seed=seed)
+    full_grid$onset = start_doy + round(non_linear_gradient * flowering_gradient, 0)
+    
+  } else {
+    stop(paste0('unknown spatial gradient: ',spatial_gradient_type))
+  }
+
   return(full_grid)
 }
