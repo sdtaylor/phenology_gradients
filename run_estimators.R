@@ -78,6 +78,7 @@ all_parameter_combos = expand.grid(sample_size = sample_sizes,
 
 all_parameter_combos$model_id = 1:nrow(all_parameter_combos)
 all_parameter_combos$model_filename = paste0(model_dir,'estimator_',all_parameter_combos$model_id,'.rds')
+all_parameter_combos$seed = runif(nrow(all_parameter_combos), 0, 10e8)
 
 #all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = c('readr','dplyr','tidyr','broom')) %dopar% {
 all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = c('dplyr','tidyr','broom')) %do% {
@@ -92,7 +93,8 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
 
   this_box_size = all_parameter_combos$box_size[iteration_i]
   this_edge_buffer = all_parameter_combos$edge_buffer[iteration_i]
-  
+
+  this_seed = all_parameter_combos$seed[iteration_i]  
   bootstrap_i = all_parameter_combos$bootstrap_i[iteration_i]
 
   model_filename = all_parameter_combos$model_filename[iteration_i]
@@ -103,7 +105,8 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
                                                   flowering_length = this_length,
                                                   flowering_gradient = this_gradient,
                                                   spatial_gradient_type = this_gradient_type,
-                                                  clustering=do_clustering)
+                                                  clustering=do_clustering,
+                                                  seed = this_seed)
 
 
   # Model estimating onset, peak, and end of flowering across space
