@@ -17,7 +17,7 @@ flowering_gradients = c(
   # Half the above, representing a more uniform spatial gradient
   1.68/0.1)
 spatial_gradient_types = c('linear','non-linear')
-clustering = c(TRUE)
+clustering = c(TRUE, FALSE)
 n_bootstrap = 5
 
 # Spatial model parameters
@@ -33,6 +33,7 @@ dir.create(model_dir, recursive = T)
 model_run_note = "
 using more realistic gradients with landsat start of season estimates from Melaas et al. 2018 data (10.1002/2017GL076933)
 add non-linear spatial gradients
+fixed non-linear spatial gradient reproducebility
 "
 
 cat(model_run_note, file=paste0(model_dir,'notes.txt'))
@@ -79,6 +80,8 @@ all_parameter_combos = expand.grid(sample_size = sample_sizes,
 all_parameter_combos$model_id = 1:nrow(all_parameter_combos)
 all_parameter_combos$model_filename = paste0(model_dir,'estimator_',all_parameter_combos$model_id,'.rds')
 all_parameter_combos$seed = runif(nrow(all_parameter_combos), 0, 10e8)
+
+write_csv(all_parameter_combos, paste0(model_dir,'estimator_metadata.csv'))
 
 #all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = c('readr','dplyr','tidyr','broom')) %dopar% {
 all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = c('dplyr','tidyr','broom')) %do% {
@@ -134,5 +137,3 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
   return(this_iteration_estimates)
 }
 
-#write_csv(all_estimates, all_estimates_file)
-write_csv(all_parameter_combos, paste0(model_dir,'estimator_metadata.csv'))
