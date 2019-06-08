@@ -1,2 +1,9 @@
 language: R
 cache: packages
+
+install:
+    - Rscript -e 'install.packages(c("devtools", "testthat", "dplyr"))'
+
+script:
+    - Rscript -e 'testthat::test_dir("tests/testthat")'
+
