@@ -78,7 +78,7 @@ spatialFloweringSampler = function(n,
                                    # a: normal-ish curve, b: beta-ish curve, c: uniform-ish curve
                                    xlimits = c(0,1),
                                    ylimits = c(0,1),
-                                   start_doy = 180,
+                                   start_doy = 90,
                                    flowering_length = 30,
                                    flowering_gradient = 10/0.1,
                                    spatial_gradient_type = 'linear',
@@ -150,6 +150,21 @@ spatialFloweringSampler = function(n,
   } else {
     stop(paste0('unknown spatial gradient: ',spatial_gradient_type))
   }
+  
+  # Sanity check
+  if(any(sampled_doy < 1)){
+    stop('negative sample doy generated')
+  }
+  if(any(sampled_doy>365)){
+    warning('sampled doy > 365 generated, consider setting more realistic parameters')
+  }
+  if(any(true_start_doy < 1)){
+    stop('negative true_start_doy generated')
+  }
+  if(any(true_start_doy>365)){
+    warning('true_start_doy > 365 generated, consider setting more realistic parameters')
+  }
+  
   
   return(data_frame(x=x,y=y,doy=sampled_doy,flower_present=flower_present, true_start_doy=true_start_doy))
 }
