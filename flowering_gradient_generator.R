@@ -122,7 +122,7 @@ spatialFloweringSampler = function(n,
   
   # presences and absences included
   if(sample_type=='pa'){
-    num_presence = ceiling(n*fraction_precent)
+    num_presence = ceiling(n*fraction_present)
     num_absence  = n - num_presence
     
     sampled_doy =  sample(1:365, size=num_presence, replace=T, prob = doy_probabilites)
