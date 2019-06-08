@@ -1,6 +1,6 @@
 context('Testing the flowering gradient simulator')
 
-library(tidyverse)
+library(dplyr)
 source('../../flowering_gradient_generator.R')
 
 x = seq(0,1,0.2)
