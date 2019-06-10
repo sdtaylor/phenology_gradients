@@ -5,5 +5,5 @@ install:
     - Rscript -e 'install.packages(c("testthat", "dplyr", "spatstat", "gstat"), quiet=TRUE)'
 
 script:
-    - Rscript -e 'testthat::test_dir("tests/testthat")'
+    - Rscript -e 'testthat::test_dir("tests/testthat", stop_on_failure=TRUE)'
 
