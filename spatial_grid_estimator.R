@@ -131,9 +131,9 @@ predict.PhenologyGridEstimator = function(model,
       estimates$peak_estimate = NA
       estimates$outside_buffer = TRUE
     } else {
-      estimates$onset_estimate = mean(box_subset$onset_estimate, na.rm=T)
+      estimates$onset_estimate = median(box_subset$onset_estimate, na.rm=T)
       estimates$end_estimate = mean(box_subset$end_estimate, na.rm=T)
-      estimates$peak_estimate = mean(box_subset$peak_estimate, na.rm=T)
+      estimates$peak_estimate = median(box_subset$peak_estimate, na.rm=T)
       estimates$outside_buffer = FALSE
     }
     return(estimates)
