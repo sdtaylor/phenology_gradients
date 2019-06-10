@@ -165,6 +165,15 @@ plot.PhenologyGridEstimator = function(model,
     model$xlimits[1], model$ylimits[2], model$xlimits[1], model$ylimits[1]  #left
   )
   
+  b = model$edge_buffer
+  buffer_box = dplyr::tribble(
+    ~x, ~y, ~xend, ~yend,
+    model$xlimits[1]+b, model$ylimits[1]+b, model$xlimits[2]-b, model$ylimits[1]+b, #bottom
+    model$xlimits[2]-b, model$ylimits[1]+b, model$xlimits[2]-b, model$ylimits[2]-b, #right
+    model$xlimits[2]-b, model$ylimits[2]-b, model$xlimits[1]+b, model$ylimits[2]-b, #top
+    model$xlimits[1]+b, model$ylimits[2]-b, model$xlimits[1]+b, model$ylimits[1]+b  #left
+  )
+  
   if(plot_type=='boxes'){
     line_segments_left = with(model$boxes, data.frame(x = center_x - half_size,
                                                       y = center_y + half_size,
@@ -190,8 +199,8 @@ plot.PhenologyGridEstimator = function(model,
     
     ggplot() + 
       geom_segment(data=line_segments,aes(x=x, y=y, xend=xend, yend=yend)) +
+      geom_segment(data=buffer_box, aes(x=x, y=y, xend=xend, yend=yend), color='#CC79A7', size=2, linetype='dashed') +
       geom_segment(data=boundary_box, aes(x=x, y=y, xend=xend, yend=yend), color='red', size=2, linetype='dashed')
-  
   } else if(plot_type=='density'){
     # An evenly spaced grid of 2500 points on the model's x,y plane
     equal_spaced_grid = expand.grid(x=seq(model$xlimits[1],model$xlimits[2],by=(model$xlimits[2]-model$xlimits[1])/50),
