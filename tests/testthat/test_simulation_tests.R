@@ -3,23 +3,36 @@ context('Testing the flowering gradient simulator')
 library(dplyr)
 source('../../flowering_gradient_generator.R')
 
-x = seq(0,1,0.2)
-y = seq(0,1,0.2)
+x = seq(0,1,0.05)
+y = seq(0,1,0.05)
 
 test_that('random gradient generators are reproducible given a seed', {
-  expect_equal(round(generate_random_spatial_gradient(x,y,seed=5),7), c(0.2587186, 0.8261091, 0.9619575, 0.7931870, 0.6221046, 0.5546258))
-  expect_equal(round(generate_random_spatial_gradient(x,y,seed=6),7), c(0.9789147, 0.6754984, 0.1602651, 0.2284302, 0.4881718, 0.4741535))
-  expect_equal(round(generate_random_spatial_gradient(x,y,seed=6999),7), c(0.9482594, 0.8344935, 0.5773765, 0.2222792, 0.0051186, 0.1434193))
+  run_1 = generate_random_spatial_gradient(x,y,seed=5)
+  expect_equal(generate_random_spatial_gradient(x,y,seed=5), run_1)
   
-  true_onset_dates = spatialFloweringGrid(xlimits=c(0,1),
-                                          ylimits = c(0,1),
-                                          cell_size=0.4,
-                                          start_doy=90,
-                                          flowering_length = 30,
-                                          flowering_gradient = 10/0.1,
-                                          spatial_gradient_type = 'non-linear',
-                                          seed=15)
-  expect_equal(true_onset_dates$onset, c(90,  97, 116, 122, 119, 135, 104, 140, 167))
+  run_2 = generate_random_spatial_gradient(x,y,seed=6)
+  expect_equal(generate_random_spatial_gradient(x,y,seed=6), run_2)
+  
+  run_3 = generate_random_spatial_gradient(x,y,seed=6000)
+  expect_equal(generate_random_spatial_gradient(x,y,seed=6000), run_3)
+  
+  run_4 = spatialFloweringGrid(xlimits=c(0,1),
+                               ylimits = c(0,1),
+                               cell_size=0.4,
+                               start_doy=90,
+                               flowering_length = 30,
+                               flowering_gradient = 10/0.1,
+                               spatial_gradient_type = 'non-linear',
+                               seed=15)
+  run_5 = spatialFloweringGrid(xlimits=c(0,1),
+                               ylimits = c(0,1),
+                               cell_size=0.4,
+                               start_doy=90,
+                               flowering_length = 30,
+                               flowering_gradient = 10/0.1,
+                               spatial_gradient_type = 'non-linear',
+                               seed=15)
+  expect_equal(run_4, run_5)
 })
 
 test_that('primary simulation function has correct output',{
