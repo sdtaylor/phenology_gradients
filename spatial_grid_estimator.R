@@ -83,6 +83,14 @@ PhenologyGridEstimator = function(doy_points,
                                         error = function(cond){fallback(doy_points_subset$doy * -1) * -1})
     estimates$peak_estimate  = mean(doy_points_subset$doy)
     
+    # Do not store invalid results
+    if(is.na(estimates$onset_estimate) | estimates$onset_estimate<0){
+      estimates$onset_estimate = NA
+    }
+    if(is.na(estimates$end_estimate) | estimates$end_estimate>365){
+      estimates$end_estimate = NA
+    }
+    
     return(estimates)
   }
   
