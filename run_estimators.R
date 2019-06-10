@@ -18,7 +18,7 @@ flowering_gradients = c(
   1.68/0.1)
 spatial_gradient_types = c('linear','non-linear')
 clustering = c(TRUE, FALSE)
-n_bootstrap = 5
+n_bootstrap = 100
 
 # Spatial model parameters
 #n_boxess = c(200)
@@ -34,6 +34,8 @@ model_run_note = "
 using more realistic gradients with landsat start of season estimates from Melaas et al. 2018 data (10.1002/2017GL076933)
 add non-linear spatial gradients
 fixed non-linear spatial gradient reproducebility
+fixed seed issues
+changed mean estimate to median
 "
 
 cat(model_run_note, file=paste0(model_dir,'notes.txt'))
@@ -84,14 +86,12 @@ all_parameter_combos$seed = runif(nrow(all_parameter_combos), 0, 10e8)
 write_csv(all_parameter_combos, paste0(model_dir,'estimator_metadata.csv'))
 
 #all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = c('readr','dplyr','tidyr','broom')) %dopar% {
-all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = c('dplyr','tidyr','broom')) %do% {
+all_errors = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = c('dplyr','tidyr','broom')) %do% {
     
-  this_iteration_estimates = tibble()
-  
   this_sample_size = all_parameter_combos$sample_size[iteration_i]
   this_length = all_parameter_combos$flowering_lengths[iteration_i]
   this_gradient = all_parameter_combos$flowering_gradients[iteration_i]
-  this_gradient_type = all_parameter_combos$spatial_gradient_types
+  this_gradient_type = all_parameter_combos$spatial_gradient_types[iteration_i]
   do_clustering = all_parameter_combos$clustering[iteration_i]
 
   this_box_size = all_parameter_combos$box_size[iteration_i]
@@ -101,6 +101,7 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
   bootstrap_i = all_parameter_combos$bootstrap_i[iteration_i]
 
   model_filename = all_parameter_combos$model_filename[iteration_i]
+  model_id = all_parameter_combos$model_id[iteration_i]
   
   simulated_sample_data = spatialFloweringSampler(n=this_sample_size,
                                                   distribution_type = 'a',
@@ -119,21 +120,33 @@ all_estimates = foreach(iteration_i = 1:nrow(all_parameter_combos), .combine = b
                                              edge_buffer = this_edge_buffer)
   
   write_rds(spatial_estimator, model_filename)
-  # slope_estimates = get_slope_estimates(spatial_estimator,
-  #                                       prediction_grid = prediction_grid)
-  # 
-  # slope_estimates$sample_size = this_sample_size
-  # slope_estimates$flowering_length = this_length
-  # slope_estimates$flowering_gradient = this_gradient
-  # slope_estimates$clustering = do_clustering
-  # slope_estimates$bootstrap_i = bootstrap_i
-  # slope_estimates$n_boxes = this_n_boxes
-  # slope_estimates$box_size = this_box_size
-  # slope_estimates$edge_buffer = this_edge_buffer
-  # 
-  # this_iteration_estimates = this_iteration_estimates %>%
-  #   bind_rows(slope_estimates)
+  ########################################
+  # Now calculate model errors
   
-  return(this_iteration_estimates)
+  # a grid  of evenly spaced points to predict with
+  prediction_grid = expand.grid(x=seq(0,1,by=0.05),
+                                y=seq(0,1,by=0.05))
+  predictions = prediction_grid %>%
+    bind_cols(predict.PhenologyGridEstimator(model = spatial_estimator, doy_points = .)) %>%
+    select(primary_model = onset_estimate, x, y)
+  
+  # Fit a simple linear model to the data for a "naive" comparison
+  linear_fl_model = lm(doy~y, data=spatial_estimator$doy_points)
+  predictions$naive_99 = predict(linear_fl_model, newdata = predictions, interval='prediction', level=0.99)[,2]
+  
+  true_dates  = spatialFloweringGrid(start_doy = 90,
+                                     flowering_gradient = this_gradient,
+                                     spatial_gradient_type = this_gradient_type,
+                                     seed = this_seed)
+
+  errors = predictions %>%
+    gather(model_type, onset_estimate, primary_model, naive_99) %>%
+    left_join(true_dates, by=c('x','y')) %>%
+    mutate(error = onset_estimate - onset)
+  
+  errors$model_id = model_id
+  
+  return(errors)
 }
 
+write_csv(all_errors, paste0(model_dir,'all_errors.csv'))
