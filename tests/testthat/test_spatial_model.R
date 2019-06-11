@@ -4,27 +4,34 @@ library(dplyr)
 source('../../spatial_grid_estimator.R')
 source('../../flowering_gradient_generator.R')
 
-sample_points = spatialFloweringSampler(n=200,
+test_that('model function runs', {
+  sample_points = spatialFloweringSampler(n=200,
+                                          xlimits = c(0,1),
+                                          ylimits = c(0,1),
+                                          start_doy = 90,
+                                          flowering_length = 30,
+                                          flowering_gradient = 10/0.1,
+                                          spatial_gradient_type = 'non-linear',
+                                          clustering = FALSE,
+                                          sample_type = 'po',
+                                          seed=100)
+  
+  fitted_model = PhenologyGridEstimator(doy_points = sample_points,
+                                        stratum_size_x = 0.1,
+                                        stratum_size_y = 0.1,
+                                        boxes_per_stratum = 5,
+                                        box_size = 0.2,
                                         xlimits = c(0,1),
                                         ylimits = c(0,1),
-                                        start_doy = 90,
-                                        flowering_length = 30,
-                                        flowering_gradient = 10/0.1,
-                                        spatial_gradient_type = 'non-linear',
-                                        clustering = FALSE,
-                                        sample_type = 'po',
-                                        seed=100)
+                                        edge_buffer = 0)  
+  
+  new_points = expand.grid(x=seq(0,1,0.2), y=seq(0,1,0.2))
+  
+  predictions = predict.PhenologyGridEstimator(fitted_model, new_points)
+  
+  expect_equal(nrow(predictions), nrow(new_points))
+})
 
-fitted_model = PhenologyGridEstimator(doy_points = sample_points,
-                                      stratum_size_x = 0.1,
-                                      stratum_size_y = 0.1,
-                                      boxes_per_stratum = 5,
-                                      box_size = 0.2,
-                                      xlimits = c(0,1),
-                                      ylimits = c(0,1),
-                                      edge_buffer = 0)
-
-test_grid
 test_that('model helper function subset_points_to_boxes', {
   test_points = round(expand.grid(x=seq(0,1,0.2),y=seq(0,1,0.2)),1)
   
