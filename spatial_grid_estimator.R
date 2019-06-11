@@ -1,4 +1,3 @@
-source('weibull.R')
 library(dplyr)
 library(purrr)
 
@@ -77,9 +76,9 @@ PhenologyGridEstimator = function(doy_points,
       stop(paste('unknown option for not_enough_data_fallback: ',not_enough_data_fallback))
     }
     
-    estimates$onset_estimate = tryCatch(as.numeric(weib.limit(doy_points_subset$doy)[1]),
+    estimates$onset_estimate = tryCatch(as.numeric(phest::weib.limit(doy_points_subset$doy)[1]),
                                         error = function(cond){fallback(doy_points_subset$doy)})
-    estimates$end_estimate   = tryCatch(as.numeric(weib.limit(doy_points_subset$doy*-1)[1]) * -1,
+    estimates$end_estimate   = tryCatch(as.numeric(phest::weib.limit(doy_points_subset$doy*-1)[1]) * -1,
                                         error = function(cond){fallback(doy_points_subset$doy * -1) * -1})
     estimates$peak_estimate  = mean(doy_points_subset$doy)
     
