@@ -2,7 +2,8 @@ language: R
 cache: packages
 
 install:
-    - Rscript -e 'install.packages(c("testthat", "dplyr", "spatstat", "gstat"), quiet=TRUE)'
+    - Rscript -e 'install.packages(c("testthat", "dplyr", "spatstat", "gstat", "devtools"), quiet=TRUE)'
+    - Rscript -e 'devtools::install_github("willpearse/phest")'
 
 script:
     - Rscript -e 'testthat::test_dir("tests/testthat", stop_on_failure=TRUE)'
