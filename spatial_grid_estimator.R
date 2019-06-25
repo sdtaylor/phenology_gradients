@@ -9,7 +9,8 @@ PhenologyGridEstimator = function(doy_points,
                                   xlimits=c(0,1),
                                   ylimits=c(0,1),
                                   edge_buffer=0.1,
-                                  not_enough_data_fallback='use_na'
+                                  not_enough_data_fallback='use_na',
+                                  max_n_per_box=50
                                   ){
   # From a collection of georeferenced  points indicating the Julian day (DOY) of
   # observing a flower, make a model estimating the onset,peak, and end of 
@@ -33,6 +34,7 @@ PhenologyGridEstimator = function(doy_points,
   model_details$xlimits = xlimits
   model_details$ylimits = ylimits
   model_details$edge_buffer = edge_buffer
+  model_details$max_n_per_box = max_n_per_box
   model_details$not_enough_data_fallback = not_enough_data_fallback
  
   generate_centers_within_stratum = function(min,max){
@@ -76,9 +78,9 @@ PhenologyGridEstimator = function(doy_points,
       stop(paste('unknown option for not_enough_data_fallback: ',not_enough_data_fallback))
     }
     
-    estimates$onset_estimate = tryCatch(as.numeric(phest::weib.limit(doy_points_subset$doy)[1]),
+    estimates$onset_estimate = tryCatch(as.numeric(phest::weib.limit(doy_points_subset$doy, k=max_n_per_box)[1]),
                                         error = function(cond){fallback(doy_points_subset$doy)})
-    estimates$end_estimate   = tryCatch(as.numeric(phest::weib.limit(doy_points_subset$doy*-1)[1]) * -1,
+    estimates$end_estimate   = tryCatch(as.numeric(phest::weib.limit(doy_points_subset$doy*-1, k=max_n_per_box)[1]) * -1,
                                         error = function(cond){fallback(doy_points_subset$doy * -1) * -1})
     estimates$peak_estimate  = mean(doy_points_subset$doy)
     
