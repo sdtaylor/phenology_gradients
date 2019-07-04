@@ -115,7 +115,8 @@ WeibullGridEstimator = function(doy_points,
 }
 
 predict.WeibullGridEstimator = function(model,
-                                          doy_points){
+                                        doy_points,
+                                        type = 'onset'){
   
   outside_buffer = function(x,y){
     !.within_bounds2(x,y,
@@ -140,7 +141,7 @@ predict.WeibullGridEstimator = function(model,
       estimates$outside_buffer = TRUE
     } else {
       estimates$onset_estimate = median(box_subset$onset_estimate, na.rm=T)
-      estimates$end_estimate = mean(box_subset$end_estimate, na.rm=T)
+      estimates$end_estimate = median(box_subset$end_estimate, na.rm=T)
       estimates$peak_estimate = median(box_subset$peak_estimate, na.rm=T)
       estimates$outside_buffer = FALSE
     }
@@ -153,8 +154,17 @@ predict.WeibullGridEstimator = function(model,
   if(outside_buffer_count>0){
     warning(paste(outside_buffer_count,'points were outside the buffer and could not be estimated.'))
   }
+  if(type == 'onset'){
+    estimate = point_estimates$onset_estimate
+  } else if(type == 'end'){
+    estimate = point_estimates$end_estimate
+  } else if(type == 'peak'){
+    estimate = point_estimates$peak_estimate
+  } else {
+    stop(paste('unknown prediction type: ',type))
+  }
   
-  return(dplyr::select(point_estimates, -x, -y, -outside_buffer))
+  return(estimate)
 }
 
 

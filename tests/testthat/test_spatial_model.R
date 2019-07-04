@@ -27,9 +27,9 @@ test_that('model function runs', {
   
   new_points = expand.grid(x=seq(0,1,0.2), y=seq(0,1,0.2))
   
-  predictions = predict.WeibullGridEstimator(fitted_model, new_points)
+  predictions = predict.WeibullGridEstimator(fitted_model, new_points, type='onset')
   
-  expect_equal(nrow(predictions), nrow(new_points))
+  expect_equal(length(predictions), nrow(new_points))
 })
 
 test_that('model helper function subset_points_to_boxes', {
