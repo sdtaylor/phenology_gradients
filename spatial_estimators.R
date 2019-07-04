@@ -1,7 +1,14 @@
 library(dplyr)
 library(purrr)
 
-PhenologyGridEstimator = function(doy_points,
+
+################################################################
+################################################################
+################################################################
+# The Weibull grid estimators
+################################################################
+################################################################
+WeibullGridEstimator = function(doy_points,
                                   stratum_size_x=0.1,
                                   stratum_size_y=0.1,
                                   boxes_per_stratum=5,
@@ -60,7 +67,7 @@ PhenologyGridEstimator = function(doy_points,
   boxes$half_size = boxes$size/2
   
   estimate_metrics = function(box_id, size, half_size, center_x, center_y){
-    doy_points_subset = subset_points_to_box(doy_points, 
+    doy_points_subset = .subset_points_to_box(doy_points, 
                                              box_center_x = center_x,
                                              box_center_y = center_y,
                                              box_half_size = half_size)
@@ -107,11 +114,11 @@ PhenologyGridEstimator = function(doy_points,
   
 }
 
-predict.PhenologyGridEstimator = function(model,
+predict.WeibullGridEstimator = function(model,
                                           doy_points){
   
   outside_buffer = function(x,y){
-    !within_bounds2(x,y,
+    !.within_bounds2(x,y,
                     x_low  = model$xlimits[1] + model$edge_buffer,
                     x_high = model$xlimits[2] - model$edge_buffer,
                     y_low  = model$ylimits[1] + model$edge_buffer,
@@ -119,7 +126,7 @@ predict.PhenologyGridEstimator = function(model,
   }
   
   estimate_metrics_from_model = function(x, y){
-    box_subset = subset_boxes_to_point(x = x,
+    box_subset = .subset_boxes_to_point(x = x,
                                        y = y,
                                        boxes = model$boxes)
     
@@ -151,7 +158,7 @@ predict.PhenologyGridEstimator = function(model,
 }
 
 
-plot.PhenologyGridEstimator = function(model,
+plot.WeibullGridEstimator = function(model,
                                        plot_type='boxes'){
   # box_types: 
   #   boxes: draw all the boxes from the model on the x,y grid, 
@@ -209,7 +216,7 @@ plot.PhenologyGridEstimator = function(model,
     
     # count the boxes behind each point
     box_count = function(x,y){
-      return(nrow(subset_boxes_to_point(x=x,y=y,boxes=model$boxes)))
+      return(nrow(.subset_boxes_to_point(x=x,y=y,boxes=model$boxes)))
     }
     
     equal_spaced_grid = equal_spaced_grid %>%
@@ -228,10 +235,10 @@ plot.PhenologyGridEstimator = function(model,
 
 #######################################
 #######################################
-# Helper Function
+# Weibull Grid Helper Functions
 #######################################
 #######################################
-subset_points_to_box = function(points, box_center_x, box_center_y, box_half_size){
+.subset_points_to_box = function(points, box_center_x, box_center_y, box_half_size){
   #
   # Given a single box center (box_x, box_y) and it's half size, return points which 
   # are conatined in ti.
@@ -244,7 +251,7 @@ subset_points_to_box = function(points, box_center_x, box_center_y, box_half_siz
   
 }
 
-subset_boxes_to_point = function(x,y, boxes){
+.subset_boxes_to_point = function(x,y, boxes){
   #
   # Given a single point (x,y), return boxes which that point is in
   #
@@ -255,12 +262,12 @@ subset_boxes_to_point = function(x,y, boxes){
            center_y + half_size >= y)
 }
 
-within_bounds = function(x, low, high){
+.within_bounds = function(x, low, high){
   x >= low & x <= high
 }
 
-within_bounds2 = function(x, y, 
+.within_bounds2 = function(x, y, 
                           x_low, x_high,
                           y_low, y_high){
-  within_bounds(x, x_low, x_high) & within_bounds(y, y_low, y_high)
+  .within_bounds(x, x_low, x_high) & .within_bounds(y, y_low, y_high)
 }
