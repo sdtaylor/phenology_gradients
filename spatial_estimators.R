@@ -342,12 +342,16 @@ predict.InterpolationEstimator = function(model,
   for(i in 1:nrow(new_points)){
     distances = .euclidian_distance(new_points[i,], fitting_points)
     distances = weight_transform(distances)
+    if(all(distances==0)){
+      # No nearby points with this bisq_distance parameter
+      next
+    }
     prediction.mean[i] = weighted.mean(model$doy_points$doy, w = distances)
     prediction.var[i] = spatstat::weighted.var(model$doy_points$doy, w = distances)
   }
   
   
-  lower_p = (1 - percentile)/2
+  lower_p = (1 - model$percentile)/2
   upper_p = 1 - lower_p
   
   if(type == 'onset'){
