@@ -1,7 +1,8 @@
 library(tidyverse)
 source('spatial_estimators.R')
 
-inat_species = c('Rudbeckia hirta','Maianthemum canadense')
+inat_species = c('Rudbeckia hirta')
+#inat_species = c('Rudbeckia hirta','Maianthemum canadense')
 inat_years = c(2016,2017)
 
 # Rudbeckia: long flowering season, very large range = moderate spatial gradient, potentially relatively linear
@@ -12,25 +13,25 @@ inat_years = c(2016,2017)
 #               weibull_box_size =  extent of 35x15, 10 = mean(c(25,10) * .4) (0.4 box size is best here)
 inat_model_params = tribble(
   ~species,         ~idw_power, ~bisq_distance, ~weibull_grid_box_size, ~weibull_grid_buffer, ~weibull_grid_xlimits, ~weibull_grid_ylimits,
-  'Rudbeckia hirta', 2,          15,             4,                   0,                  c(-100,-70),            c(25,50)
-  #'Maianthemum canadense', 2,    5,              7,                   0,                  c(-95,-60),             c(35,50),
+  'Rudbeckia hirta', 2,          15,             4,                   0,                  c(-100,-70),            c(25,50),
+  'Maianthemum canadense', 2,    5,              7,                   0,                  c(-95,-60),             c(35,50)
 )
 
 inat_data = read_csv('~/data/inat/all_observations.csv') %>%
   filter(species %in% inat_species, open_flower==1, data_source=='inaturalist') %>%
   filter(longitude < -65, longitude > -130, latitude > 20, latitude < 60) 
 
-phenocam_dates = read_csv('data/phenocam_transition_dates.csv') %>%
-  filter(year!=2019, direction=='rising')
+phenocam_data = read_csv('data/phenocam_transition_dates.csv') %>%
+  filter(year<=2017, direction=='rising')
 
-phenocam_site_info = phenocam_dates %>%
+phenocam_site_info = phenocam_data %>%
   select(site, lat, lon) %>% 
   distinct() %>%
   mutate(x=lon, y=lat)
 
 ###################################################################
 
-all_predictions = tibble()
+inat_model_estimates = tibble()
 
 for(this_species in inat_species){
   this_species_params = inat_model_params %>%
@@ -60,19 +61,27 @@ for(this_species in inat_species){
                                               box_size = this_species_params$weibull_grid_box_size,
                                               edge_buffer = this_species_params$weibull_grid_buffer)
     
-    
+    linear_fl_model = lm(doy~y, data=this_spp_data)
+
     predictions = phenocam_site_info %>%
       mutate(idw = predict.InterpolationEstimator(idw_model, doy_points = ., type = 'onset'),
              bisq = predict.InterpolationEstimator(bisq_model, doy_points = ., type = 'onset'),
-             weibull = predict.WeibullGridEstimator(weibull_grid_model, doy_points = ., type = 'onset')) %>%
+             weibull = predict.WeibullGridEstimator(weibull_grid_model, doy_points = ., type = 'onset'),
+             linear = predict(linear_fl_model, newdata = ., interval='prediction', level=0.99)[,2]) %>%
       select(-lat, -lon, -x, -y) %>%
-      gather(method, onset_estimate, idw, bisq, weibull) %>%
-      mutate(species = this_species, year = this_year)
+      gather(method, inat_onset_estimate, idw, bisq, weibull, linear) %>%
+      mutate(inat_species = this_species, year = this_year)
     
-    all_predictions = all_predictions %>%
+    inat_model_estimates = inat_model_estimates %>%
       bind_rows(predictions)
     
   }
 }
 
-write_csv(all_predictions, 'inaturalist_onset_estimates_at_phenocam_sites.csv')
+write_csv(inat_model_estimates, 'inaturalist_onset_estimates_at_phenocam_sites.csv')
+
+
+
+
+#############################################
+
