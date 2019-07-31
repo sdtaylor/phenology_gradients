@@ -14,6 +14,7 @@ selected_sites = bind_rows(
 #   try(
 #   download_phenocam(site = selected_sites$site_name[i],
 #                     veg_type = selected_sites$veg_type[i],
+#                     roi_id = 1000,
 #                     frequency = 3,
 #                     phenophase = T,
 #                     out_dir = 'data/phenocam_site_data/')
@@ -26,10 +27,10 @@ selected_sites = bind_rows(
 
 transition_date_files = list.files('data/phenocam_site_data/', pattern = '*transition*', full.names = T)
 
-read_transition_file = function(f){read_csv(f, skip = 16)}
+read_transition_file = function(f){read_csv(f, skip = 16, col_types = cols(roi_id = col_character()))}
 dates = purrr::map_df(transition_date_files, read_transition_file) %>%
   filter(gcc_value=='gcc_90') %>% # this is the GCC 90th percentiel
-  select(site, roi_id, direction, transition_10, transition_10_lower_ci, transition_10_upper_ci) %>%
+  select(site, site_type = veg_type, roi_id, direction, transition_10, transition_10_lower_ci, transition_10_upper_ci) %>%
   mutate(doy = lubridate::yday(transition_10),
          doy_high = lubridate::yday(transition_10_upper_ci),
          doy_low = lubridate::yday(transition_10_lower_ci),
