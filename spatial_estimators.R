@@ -116,7 +116,9 @@ WeibullGridEstimator = function(doy_points,
 
 predict.WeibullGridEstimator = function(model,
                                         doy_points,
-                                        type = 'onset'){
+                                        type = 'onset',
+                                        se = F,
+                                        level = 0.95){
   
   outside_buffer = function(x,y){
     !.within_bounds2(x,y,
@@ -125,6 +127,9 @@ predict.WeibullGridEstimator = function(model,
                     y_low  = model$ylimits[1] + model$edge_buffer,
                     y_high = model$ylimits[2] - model$edge_buffer)
   }
+  
+  lower_quantile = (1 - level)/2
+  upper_quantile = 1 - lower_quantile
   
   estimate_metrics_from_model = function(x, y){
     box_subset = .subset_boxes_to_point(x = x,
@@ -135,15 +140,33 @@ predict.WeibullGridEstimator = function(model,
     estimates$x = x
     estimates$y = y
     if(outside_buffer(x,y)){
-      estimates$onset_estimate = NA
-      estimates$end_estimate = NA
-      estimates$peak_estimate = NA
-      estimates$outside_buffer = TRUE
+      estimates$onset_estimate       = NA
+      estimates$onset_estimate_upper = NA
+      estimates$onset_estimate_lower = NA
+      
+      estimates$end_estimate         = NA
+      estimates$end_estimate_upper   = NA
+      estimates$end_estimate_lower   = NA
+      
+      estimates$peak_estimate        = NA
+      estimates$peak_estimate_upper  = NA
+      estimates$peak_estimate_lower  = NA
+      
+      estimates$outside_buffer       = TRUE
     } else {
-      estimates$onset_estimate = median(box_subset$onset_estimate, na.rm=T)
-      estimates$end_estimate = median(box_subset$end_estimate, na.rm=T)
-      estimates$peak_estimate = median(box_subset$peak_estimate, na.rm=T)
-      estimates$outside_buffer = FALSE
+      estimates$onset_estimate       = median(box_subset$onset_estimate, na.rm=T)
+      estimates$onset_estimate_upper = quantile(box_subset$onset_estimate, upper_quantile, na.rm=T)
+      estimates$onset_estimate_lower = quantile(box_subset$onset_estimate, lower_quantile, na.rm=T)
+      
+      estimates$end_estimate         = median(box_subset$end_estimate, na.rm=T)
+      estimates$end_estimate_upper   = quantile(box_subset$end_estimate, upper_quantile, na.rm=T)
+      estimates$end_estimate_lower   = quantile(box_subset$end_estimate, lower_quantile, na.rm=T)
+      
+      estimates$peak_estimate        = median(box_subset$peak_estimate, na.rm=T)
+      estimates$peak_estimate_upper  = quantile(box_subset$peak_estimate, upper_quantile, na.rm=T)
+      estimates$peak_estimate_lower  = quantile(box_subset$peak_estimate, lower_quantile, na.rm=T)
+      
+      estimates$outside_buffer       = FALSE
     }
     return(estimates)
   }
@@ -155,16 +178,26 @@ predict.WeibullGridEstimator = function(model,
     warning(paste(outside_buffer_count,'points were outside the buffer and could not be estimated.'))
   }
   if(type == 'onset'){
-    estimate = point_estimates$onset_estimate
+    point_estimates$estimate       = point_estimates$onset_estimate
+    point_estimates$estimate_lower = point_estimates$onset_estimate_lower
+    point_estimates$estimate_upper = point_estimates$onset_estimate_upper
   } else if(type == 'end'){
-    estimate = point_estimates$end_estimate
+    point_estimates$estimate       = point_estimates$end_estimate
+    point_estimates$estimate_lower = point_estimates$end_estimate_lower
+    point_estimates$estimate_upper = point_estimates$end_estimate_upper
   } else if(type == 'peak'){
-    estimate = point_estimates$peak_estimate
+    point_estimates$estimate       = point_estimates$peak_estimate
+    point_estimates$estimate_lower = point_estimates$peak_estimate_lower
+    point_estimates$estimate_upper = point_estimates$peak_estimate_upper
   } else {
     stop(paste('unknown prediction type: ',type))
   }
   
-  return(estimate)
+  if(se){
+    return(dplyr::select(point_estimates, estimate, estimate_lower, estimate_upper))
+  } else{
+    return(point_estimates$estimate)
+  }
 }
 
 
