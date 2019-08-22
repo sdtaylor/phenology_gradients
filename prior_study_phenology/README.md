@@ -13,3 +13,9 @@ Helenurm, K., & Barrett, S. C. H. (1987). The reproductive biology of boreal for
 Dunnell et al. 2011 lists mean first flowering date for R. hirta in a table as doys 177,175,169 for the years 2008-2010.
 
 Anderson 1980 and Helenurm 1987 have flowering onset in figures. Exact values were extracted from the figures using the [WebPlotDigitizer](https://automeris.io/WebPlotDigitizer/). Figures and resulting data are in the respective files.
+
+
+Species | Flower onset Range | General location | Latitude | years | source
+R. hirta | 169-177 | Fargo, ND | 46.9 | 2008-2010 | Dunnell 2011
+R. hirta | 172-175 | Madison, WI |43.1 | 1950-1951 | Anderson 1980
+M. canadense | 151-165 | Doaktown, New Brunswick | 46.5 | 1979-1980 | Helenurm 1987
