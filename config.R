@@ -3,7 +3,15 @@
 # -the paramters for the simulated data, ie the underlying phenology parameters, sample sizes, etc.
 # -the different parameters used for each of the methods in the simulation study
 
-# 
+####################################
+# global config stuff
+####################################
+data_folder = '/home/shawn/data/phenology_gradients/'
+
+
+###################################
+# stuff affecting runtim and resources in run_estimators.R
+###################################
 n_cores = 2
 n_bootstrap = 1
 
