@@ -1,6 +1,5 @@
 library(tidyverse)
-source('flowering_gradient_generator.R')
-source('spatial_estimators.R')
+#devtools::install_github('sdtaylor/flowergrids')
 
 source('config.R')
 
@@ -59,22 +58,22 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
   
   simulation_id = simulation_combos$simulation_id[simulation_i]
   
-  simulated_sample_data = spatialFloweringSampler(n=this_sample_size,
-                                                  distribution_type = 'a',
-                                                  start_doy = 90,
-                                                  flowering_length = this_length,
-                                                  flowering_gradient = this_gradient,
-                                                  spatial_gradient_type = this_gradient_type,
-                                                  clustering=do_clustering,
-                                                  seed = this_seed)
+  simulated_sample_data = flowergrids::spatial_flowering_sampler(n=this_sample_size,
+                                                                 distribution_type = 'a',
+                                                                 start_doy = 90,
+                                                                 flowering_length = this_length,
+                                                                 flowering_gradient = this_gradient,
+                                                                 spatial_gradient_type = this_gradient_type,
+                                                                 clustering=do_clustering,
+                                                                 seed = this_seed)
   
-  true_dates  = spatialFloweringGrid(start_doy = 90,
-                                     xlimits = c(0,1),
-                                     ylimits = c(0,1),
-                                     cell_size = 0.05,
-                                     flowering_gradient = this_gradient,
-                                     spatial_gradient_type = this_gradient_type,
-                                     seed = this_seed)
+  true_dates  = flowergrids::spatial_flowering_grid(start_doy = 90,
+                                                    xlimits = c(0,1),
+                                                    ylimits = c(0,1),
+                                                    cell_size = 0.05,
+                                                    flowering_gradient = this_gradient,
+                                                    spatial_gradient_type = this_gradient_type,
+                                                    seed = this_seed)
   
   # a grid  of evenly spaced points to predict with. matches true_dates
   prediction_grid = expand.grid(x=seq(0,1,by=0.05),
@@ -87,13 +86,13 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
   # Model estimating onset, peak, and end of flowering across space
   for(model_i in weibull_model_parameters$model_id){
     params = filter(weibull_model_parameters, model_id == model_i)
-    weibull_grid_model = WeibullGridEstimator(doy_points = simulated_sample_data,
-                                                boxes_per_stratum = 5,
-                                                box_size = params$box_size,
-                                                edge_buffer = params$edge_buffer)
+    weibull_grid_model = flowergrids::weibull_grid(doy_points = simulated_sample_data,
+                                                   boxes_per_stratum = 5,
+                                                   box_size = params$box_size,
+                                                   edge_buffer = params$edge_buffer)
   
     predictions = prediction_grid %>%
-      mutate(onset_estimate = predict.WeibullGridEstimator(model = weibull_grid_model, doy_points = ., type='onset')) %>%
+      mutate(onset_estimate = flowergrids::predict.weibull_grid(model = weibull_grid_model, doy_points = ., type='onset')) %>%
       mutate(model_id = model_i,
              model = 'weibull_grid')
     
