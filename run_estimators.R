@@ -100,44 +100,7 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
     model_estimates = model_estimates %>%
       bind_rows(predictions)
   }
-  #############################################
-  # The interpolation model using bi-square kernel weights
-  #############################################
-  for(model_i in bisq_model_parameters$model_id){
-    params = filter(bisq_model_parameters, model_id == model_i)
-    interpolation_model = InterpolationEstimator(doy_points = simulated_sample_data,
-                                                 percentile = 0.99,
-                                                 method = 'bisq',
-                                                 bisq_distance = params$b_distance)
-    
-    predictions = prediction_grid %>%
-      mutate(onset_estimate = predict.InterpolationEstimator(model = interpolation_model, doy_points = ., type='onset')) %>%
-      mutate(model_id = model_i,
-             model = 'bisq')
-    
-    model_estimates = model_estimates %>%
-      bind_rows(predictions)
-  }
-  
-  #############################################
-  # The interpolation model using inverse distance weights
-  #############################################
-  for(model_i in idw_model_parameters$model_id){
-    params = filter(idw_model_parameters, model_id == model_i)
-    interpolation_model = InterpolationEstimator(doy_points = simulated_sample_data,
-                                                 percentile = 0.99,
-                                                 method = 'idw',
-                                                 power = params$idw_power)
-    
-    predictions = prediction_grid %>%
-      mutate(onset_estimate = predict.InterpolationEstimator(model = interpolation_model, doy_points = ., type='onset')) %>%
-      mutate(model_id = model_i,
-             model = 'idw')
-    
-    model_estimates = model_estimates %>%
-      bind_rows(predictions)
-  }
-  
+
   #############################################
   # The linear model
   #############################################

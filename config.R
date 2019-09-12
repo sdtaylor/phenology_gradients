@@ -43,19 +43,6 @@ weibull_model_parameters = expand.grid(
 )
 weibull_model_parameters$model_id = 1:nrow(weibull_model_parameters)
 
-# bi-squared weighted distance (bisq) model
-bisq_model_parameters = expand.grid(
-  b_distance = c(0.2, 0.5, 0.75, 1.0)
-)
-bisq_model_parameters$model_id = 1:nrow(bisq_model_parameters)
-
-
-# inverse weighted distance (idw) model
-idw_model_parameters = expand.grid(
-  idw_power = c(1,2,3)
-)
-idw_model_parameters$model_id = 1:nrow(idw_model_parameters)
-
 # # linear model 
 # linear_model_parameters = expand.grid(
 #   quantile = c(0.9, 0.95, 0.99)
