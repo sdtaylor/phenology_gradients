@@ -19,6 +19,7 @@ fixed seed issues
 changed mean estimate to median
 
 added other models
+removed other models and added stratum size to the weibull grid test
 "
 
 cat(model_run_note, file=paste0(model_dir,'notes.txt'))
@@ -87,9 +88,11 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
   for(model_i in weibull_model_parameters$model_id){
     params = filter(weibull_model_parameters, model_id == model_i)
     weibull_grid_model = flowergrids::weibull_grid(doy_points = simulated_sample_data,
-                                                   boxes_per_stratum = 5,
+                                                   boxes_per_stratum = 10,
                                                    box_size = params$box_size,
-                                                   edge_buffer = params$edge_buffer)
+                                                   edge_buffer = params$edge_buffer,
+                                                   stratum_size_x = params$stratum_size,
+                                                   stratum_size_y = params$stratum_size)
   
     predictions = prediction_grid %>%
       mutate(onset_estimate = flowergrids::predict.weibull_grid(model = weibull_grid_model, doy_points = ., type='onset')) %>%
