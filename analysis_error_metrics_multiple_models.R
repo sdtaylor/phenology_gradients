@@ -1,10 +1,10 @@
 library(tidyverse)
-library(cowplot)
+library(ggrepel)
 #source('flowering_gradient_generator.R')
 #source('spatial_grid_estimator.R')
 
-simulation_metadata = read_csv('results/models/2019-07-05-0935/simulation_metadata.csv')
-model_errors = read_csv('results/models/2019-07-05-0935/all_errors.csv')
+simulation_metadata = read_csv('results/models/2019-09-12-2208/simulation_metadata.csv')
+model_errors = read_csv('results/models/2019-09-12-2208/all_errors.csv')
 
 # For each simulation run, pick the models best performance from their best parameters used
 model_errors = model_errors %>%
@@ -16,9 +16,8 @@ model_errors = model_errors %>%
 model_errors = model_errors %>%
   left_join(simulation_metadata, by='simulation_id')
 
-
-model_errors$model = factor(model_errors$model, levels = c('bisq','idw','linear','weibull_grid'),
-                                                labels = c('BiSquared','IDW','Linear Model','Weibull Grid'))
+model_errors$model = factor(model_errors$model, levels = c('linear','weibull_grid'),
+                                                labels = c('Linear Model','Weibull Grid'))
 
 ##############################################################
 ##############################################################
@@ -26,12 +25,12 @@ model_errors$model = factor(model_errors$model, levels = c('bisq','idw','linear'
 ##############################################################
 phenology_error_facet_labels = tribble(
   ~spatial_gradient_types, ~flowering_gradients, ~facet_label,~facet_order,
-  'linear',16.8,     'A.    Weak Linear Gradient', 1, 
-  'non-linear',16.8, 'B.    Weak Non-Linear Gradient', 2,
+  'linear',16.8,     'A.       Weak Linear Gradient', 1, 
+  'non-linear',16.8, 'B.       Weak Non-Linear Gradient', 2,
   'linear',33.6,     'C.    Moderate Linear Gradient', 3, 
   'non-linear',33.6, 'D.    Moderate Non-Linear Gradient', 4, 
-  'linear',67.2,     'E.    Strong Linear Gradient', 5, 
-  'non-linear',67.2, 'F.    Strong Non-Linear Gradient', 6
+  'linear',67.2,     'E.       Strong Linear Gradient', 5, 
+  'non-linear',67.2, 'F.       Strong Non-Linear Gradient', 6
 )
 
 phenology_error_means =  model_errors %>%
@@ -45,26 +44,29 @@ phenology_error_means =  model_errors %>%
 phenology_error_model_labels = phenology_error_means %>%
   group_by(model, facet_label) %>%
   filter(flowering_lengths == max(flowering_lengths)) %>%
-  ungroup()
+  ungroup() 
 
 ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
   geom_line(size=2) +
   #scale_color_brewer(palette = 'Dark2') + 
-  scale_color_manual(values = c('black','grey60','#0072B2','#E69F00')) +
-  #scale_color_viridis_d() + 
+  scale_color_manual(values = c('black','#0072B2','#E69F00')) +
+  #scale_color_manual(values = viridis::magma(4, end=0.8)) + 
+  #scale_color_viridis_d(end = 0.9) + 
   #scale_color_manual(values = c('black','grey20','grey60','grey80')) + 
   #scale_linetype_manual(values = c('solid','dashed','solid','dashed')) + 
   geom_text_repel(data = phenology_error_model_labels, aes(x=flowering_lengths + 0.5, label=model), 
-                  size=6,fontface='bold', family='sans',
+                  size=4,fontface='bold', family='sans',
                   xlim=c(62,70), hjust=0, min.segment.length = 0.1) + 
   scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,74),
                      minor_breaks = c()) + 
   facet_wrap(~facet_label, scales='free', ncol=2) +
   theme_bw(base_size = 20) +
   theme(legend.position = 'none',
+        legend.title = element_blank(),
+        legend.background = element_rect(color='black', size=0.5),
         legend.key.width = unit(20,'mm'),
         axis.text = element_text(size=18),
-        strip.text = element_text(size=20),
+        strip.text = element_text(size=20, hjust = 0),
         axis.title = element_text(size=20)) + 
   labs(x='Flowering Length (Days)', y='RMSE', color='', linetype='')
 
@@ -84,9 +86,9 @@ sampling_error_model_labels = sampling_error_means %>%
 ggplot(sampling_error_means, aes(x=sample_size, y=rmse, color=model)) + 
   geom_line(size=3) +
   #scale_color_brewer(palette = 'Dark2') + 
-  scale_color_manual(values = c('black','grey60','#0072B2','#E69F00')) +
+  scale_color_manual(values = c('black','#0072B2','#E69F00')) +
   geom_text_repel(data = sampling_error_model_labels, aes(x=sample_size + 0.5, label=model),
-                  size=6, fontface='bold', family='sans',
+                  size=4, fontface='bold', family='sans',
                   xlim=c(1200,1500), hjust=0, min.segment.length = 1) + 
   scale_x_continuous(breaks=c(150,300,600,1200), limits = c(150, 1500),
                      minor_breaks = c()) + 
