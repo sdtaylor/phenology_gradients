@@ -17,7 +17,7 @@ best_model_errors = best_model_errors %>%
   left_join(simulation_metadata, by='simulation_id')
 
 best_model_errors$model = factor(best_model_errors$model, levels = c('linear','weibull_grid'),
-                                                labels = c('Linear Model','Weibull Grid'))
+                                                labels = c('Naive Model','Weibull Grid'))
 
 ##############################################################
 ##############################################################
@@ -25,17 +25,18 @@ best_model_errors$model = factor(best_model_errors$model, levels = c('linear','w
 ##############################################################
 phenology_error_facet_labels = tribble(
   ~spatial_gradient_types, ~flowering_gradients, ~facet_label,~facet_order,
-  'linear',16.8,     'A.       Weak Linear Gradient', 1, 
-  'non-linear',16.8, 'B.       Weak Non-Linear Gradient', 2,
-  'linear',33.6,     'C.    Moderate Linear Gradient', 3, 
-  'non-linear',33.6, 'D.    Moderate Non-Linear Gradient', 4, 
-  'linear',67.2,     'E.       Strong Linear Gradient', 5, 
-  'non-linear',67.2, 'F.       Strong Non-Linear Gradient', 6
+  'linear',16.8,     'A.      Weak Linear Gradient', 1, 
+  'non-linear',16.8, 'B.    Weak Non-Linear Gradient', 2,
+  'linear',33.6,     'C.   Moderate Linear Gradient', 3, 
+  'non-linear',33.6, 'D. Moderate Non-Linear Gradient', 4, 
+  'linear',67.2,     'E.      Strong Linear Gradient', 5, 
+  'non-linear',67.2, 'F.    Strong Non-Linear Gradient', 6
 )
 
 phenology_error_means =  best_model_errors %>%
+  filter(sample_size == 300, clustering == T) %>%
   group_by(model, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
-  summarise(rmse = mean(rmse)) %>%
+  summarise(rmse = mean(rmse), n=n()) %>%
   ungroup() %>%
   mutate(flowering_gradients = round(flowering_gradients,1)) %>%
   left_join(phenology_error_facet_labels, by=c('spatial_gradient_types','flowering_gradients')) %>%
@@ -54,10 +55,10 @@ ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
   #scale_color_viridis_d(end = 0.9) + 
   #scale_color_manual(values = c('black','grey20','grey60','grey80')) + 
   #scale_linetype_manual(values = c('solid','dashed','solid','dashed')) + 
-  geom_text_repel(data = phenology_error_model_labels, aes(x=flowering_lengths + 0.5, label=model), 
+  geom_text_repel(data = phenology_error_model_labels, aes(x=flowering_lengths + 0.5, label=stringr::str_wrap(model, 10)), 
                   size=4,fontface='bold', family='sans',
                   xlim=c(62,70), hjust=0, min.segment.length = 0.1) + 
-  scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,74),
+  scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,70),
                      minor_breaks = c()) + 
   facet_wrap(~facet_label, scales='free', ncol=2) +
   theme_bw(base_size = 20) +
