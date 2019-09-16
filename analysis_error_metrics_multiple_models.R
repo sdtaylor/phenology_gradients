@@ -1,22 +1,22 @@
 library(tidyverse)
 library(ggrepel)
-#source('flowering_gradient_generator.R')
-#source('spatial_grid_estimator.R')
+
+source('config.R')
 
 simulation_metadata = read_csv('results/models/2019-09-12-2208/simulation_metadata.csv')
-model_errors = read_csv('results/models/2019-09-12-2208/all_errors.csv')
+all_model_errors = read_csv('results/models/2019-09-12-2208/all_errors.csv')
 
 # For each simulation run, pick the models best performance from their best parameters used
-model_errors = model_errors %>%
+best_model_errors = all_model_errors %>%
   group_by(model, simulation_id) %>%
   top_n(1, -rmse) %>%
   ungroup()
 
 # attach simulation info, such as phenology length, sample size, etc. 
-model_errors = model_errors %>%
+best_model_errors = best_model_errors %>%
   left_join(simulation_metadata, by='simulation_id')
 
-model_errors$model = factor(model_errors$model, levels = c('linear','weibull_grid'),
+best_model_errors$model = factor(best_model_errors$model, levels = c('linear','weibull_grid'),
                                                 labels = c('Linear Model','Weibull Grid'))
 
 ##############################################################
@@ -33,7 +33,7 @@ phenology_error_facet_labels = tribble(
   'non-linear',67.2, 'F.       Strong Non-Linear Gradient', 6
 )
 
-phenology_error_means =  model_errors %>%
+phenology_error_means =  best_model_errors %>%
   group_by(model, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
   summarise(rmse = mean(rmse)) %>%
   ungroup() %>%
@@ -72,7 +72,7 @@ ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
 
 ##############################################################
 
-sampling_error_means = model_errors %>%
+sampling_error_means = best_model_errors %>%
   group_by(model, sample_size, clustering) %>%
   summarise(rmse = mean(rmse)) %>%
   ungroup()
