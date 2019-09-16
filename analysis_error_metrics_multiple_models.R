@@ -73,11 +73,25 @@ ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
 
 ##############################################################
 
+sampling_error_facet_labels = tribble(
+  ~spatial_gradient_types, ~clustering, ~facet_label,~facet_order,
+  'linear',FALSE,     'A.  Moderate Linear Gradient\n   Non-Clustered Sampling', 1, 
+  'non-linear',FALSE, 'B.  Moderate Non-Linear Gradient\n Non-Clustered Sampling', 2,
+  'linear',TRUE,      'C.  Moderate Linear Gradient\n Clustered Sampling', 3, 
+  'non-linear',TRUE,  'D.  Moderate Non-Linear Gradient\n Clustered Sampling', 4
+)
+
 sampling_error_means = best_model_errors %>%
-  group_by(model, sample_size, clustering) %>%
-  summarise(rmse = mean(rmse)) %>%
-  ungroup()
-sampling_error_means$clustering = factor(sampling_error_means$clustering , levels = c(TRUE, FALSE), labels = c('A.     Clustered Sampling','B.     Non-Clustered Sampling'))
+  filter(round(flowering_gradients,1) == 33.6, flowering_lengths == 30) %>%
+  group_by(model, spatial_gradient_types, sample_size, clustering) %>%
+  summarise(rmse = mean(rmse), n=n()) %>%
+  ungroup() %>%
+  left_join(sampling_error_facet_labels, by=c('spatial_gradient_types','clustering')) %>%
+  mutate(facet_label = forcats::fct_reorder(facet_label, facet_order))
+
+# sampling_error_means$clustering = factor(sampling_error_means$clustering , levels = c(TRUE, FALSE), labels = c('Clustered Sampling','Non-Clustered Sampling'))
+# sampling_error_means$spatial_gradient_types = factor(sampling_error_means$spatial_gradient_types, levels = c('linear','non-linear'),
+#                                                      labels = c('Moderate Linear Gradient','Moderate Non-Linear Gradient'))
 
 sampling_error_model_labels = sampling_error_means %>%
   group_by(model, clustering) %>%
@@ -88,12 +102,12 @@ ggplot(sampling_error_means, aes(x=sample_size, y=rmse, color=model)) +
   geom_line(size=3) +
   #scale_color_brewer(palette = 'Dark2') + 
   scale_color_manual(values = c('black','#0072B2','#E69F00')) +
-  geom_text_repel(data = sampling_error_model_labels, aes(x=sample_size + 0.5, label=model),
-                  size=4, fontface='bold', family='sans',
+  geom_text_repel(data = sampling_error_model_labels, aes(x=sample_size + 0.5, label=stringr::str_wrap(model, 10)),
+                  size=5, fontface='bold', family='sans',
                   xlim=c(1200,1500), hjust=0, min.segment.length = 1) + 
   scale_x_continuous(breaks=c(150,300,600,1200), limits = c(150, 1500),
                      minor_breaks = c()) + 
-  facet_wrap(~clustering) +
+  facet_wrap(~facet_label) +
   theme_bw(base_size = 20) + 
   theme(axis.text = element_text(size=18),
         strip.text = element_text(size=20),
