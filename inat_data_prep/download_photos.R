@@ -31,12 +31,15 @@ drop_non_inat_photos = function(metadata){
 
 rudbeckia = read_csv(paste0(data_folder, 'inat_rudbeckia_hirta.csv')) %>%
   filter(quality_grade=='research') %>%
+  filter(longitude >= -100) %>%
+  filter(positional_accuracy < 50*100) %>%
   rename(inat_id = id)
 
 rudbeckia = download_images(rudbeckia, save_dir = paste0(data_folder, 'photos/rudbeckia/'))
 
 maianthemum = read_csv(paste0(data_folder, 'inat_maianthemum_canadense.csv')) %>%
   filter(quality_grade=='research') %>%
+  filter(positional_accuracy < 50*100) %>%
   rename(inat_id = id)
 
 maianthemum = download_images(maianthemum, save_dir = paste0(data_folder, 'photos/maianthemum/'))
