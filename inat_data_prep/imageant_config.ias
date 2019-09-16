@@ -1,0 +1,27 @@
+main_tasks:
+  - text: 'Open flowers present?'
+    variable: 'open_flowers'
+    responses:
+      - text: 'open flowers present'
+        action: keypress{p ~ 1}
+      - text: 'open flowers absent'
+        action: keypress{a ~ 0}
+        jump-to: flower_tasks
+      - text: 'uncertain'
+        action: keypress{u ~ U}
+
+
+#
+# Only run these tasks if the image shows a plant without open flowers.
+#
+flower_tasks:
+  - text: 'Flower Buds Present?'
+    variable: 'flowers'
+    default: inherit
+    responses:
+      - text: 'flowers buds present'
+        action: keypress{p ~ 1}
+      - text: 'flowers buds absent'
+        action: keypress{a ~ 0}
+      - text: 'uncertain'
+        action: keypress{u ~ U}
