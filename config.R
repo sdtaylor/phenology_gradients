@@ -39,8 +39,8 @@ clustering = c(TRUE, FALSE)
 #n_boxess = c(200)
 weibull_model_parameters = expand.grid(
   box_size = c(0.2, 0.4),
-  edge_buffer = c(0, 0.1, 0.2),
-  stratum_size = c(0.1, 0.2, 0.3)
+  num_boxes = c(5,10,20,40),
+  stratum_size = c(0.1, 0.2, 0.5)
 )
 weibull_model_parameters$model_id = 1:nrow(weibull_model_parameters)
 

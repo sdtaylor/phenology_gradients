@@ -45,8 +45,8 @@ write_csv(simulation_combos, paste0(model_dir,'simulation_metadata.csv'))
 
 required_packages =  c('dplyr','tidyr','broom','spatstat','phest')
 
-#all_estimates = foreach(simulation_i = 1:nrow(all_parameter_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = required_packages)) %dopar% {
-all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_rows, .errorhandling = 'remove', .packages =required_packages) %do% {
+#all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = required_packages) %dopar% {
+all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = required_packages) %do% {
     
   this_sample_size = simulation_combos$sample_size[simulation_i]
   this_length = simulation_combos$flowering_lengths[simulation_i]
@@ -88,9 +88,9 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
   for(model_i in weibull_model_parameters$model_id){
     params = filter(weibull_model_parameters, model_id == model_i)
     weibull_grid_model = flowergrids::weibull_grid(doy_points = simulated_sample_data,
-                                                   boxes_per_stratum = 10,
+                                                   boxes_per_stratum = params$num_boxes,
                                                    box_size = params$box_size,
-                                                   edge_buffer = params$edge_buffer,
+                                                   edge_buffer = 0,
                                                    stratum_size_x = params$stratum_size,
                                                    stratum_size_y = params$stratum_size)
   

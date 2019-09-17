@@ -1,23 +1,23 @@
 library(tidyverse)
 library(ggrepel)
-#source('flowering_gradient_generator.R')
-#source('spatial_grid_estimator.R')
+
+source('config.R')
 
 simulation_metadata = read_csv('results/models/2019-09-12-2208/simulation_metadata.csv')
-model_errors = read_csv('results/models/2019-09-12-2208/all_errors.csv')
+all_model_errors = read_csv('results/models/2019-09-12-2208/all_errors.csv')
 
 # For each simulation run, pick the models best performance from their best parameters used
-model_errors = model_errors %>%
+best_model_errors = all_model_errors %>%
   group_by(model, simulation_id) %>%
   top_n(1, -rmse) %>%
   ungroup()
 
 # attach simulation info, such as phenology length, sample size, etc. 
-model_errors = model_errors %>%
+best_model_errors = best_model_errors %>%
   left_join(simulation_metadata, by='simulation_id')
 
-model_errors$model = factor(model_errors$model, levels = c('linear','weibull_grid'),
-                                                labels = c('Linear Model','Weibull Grid'))
+best_model_errors$model = factor(best_model_errors$model, levels = c('linear','weibull_grid'),
+                                                labels = c('Naive Model','Weibull Grid'))
 
 ##############################################################
 ##############################################################
@@ -25,17 +25,18 @@ model_errors$model = factor(model_errors$model, levels = c('linear','weibull_gri
 ##############################################################
 phenology_error_facet_labels = tribble(
   ~spatial_gradient_types, ~flowering_gradients, ~facet_label,~facet_order,
-  'linear',16.8,     'A.       Weak Linear Gradient', 1, 
-  'non-linear',16.8, 'B.       Weak Non-Linear Gradient', 2,
-  'linear',33.6,     'C.    Moderate Linear Gradient', 3, 
-  'non-linear',33.6, 'D.    Moderate Non-Linear Gradient', 4, 
-  'linear',67.2,     'E.       Strong Linear Gradient', 5, 
-  'non-linear',67.2, 'F.       Strong Non-Linear Gradient', 6
+  'linear',16.8,     'A.      Weak Linear Gradient', 1, 
+  'non-linear',16.8, 'B.    Weak Non-Linear Gradient', 2,
+  'linear',33.6,     'C.   Moderate Linear Gradient', 3, 
+  'non-linear',33.6, 'D. Moderate Non-Linear Gradient', 4, 
+  'linear',67.2,     'E.      Strong Linear Gradient', 5, 
+  'non-linear',67.2, 'F.    Strong Non-Linear Gradient', 6
 )
 
-phenology_error_means =  model_errors %>%
+phenology_error_means =  best_model_errors %>%
+  filter(sample_size == 300, clustering == T) %>%
   group_by(model, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
-  summarise(rmse = mean(rmse)) %>%
+  summarise(rmse = mean(rmse), n=n()) %>%
   ungroup() %>%
   mutate(flowering_gradients = round(flowering_gradients,1)) %>%
   left_join(phenology_error_facet_labels, by=c('spatial_gradient_types','flowering_gradients')) %>%
@@ -54,10 +55,10 @@ ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
   #scale_color_viridis_d(end = 0.9) + 
   #scale_color_manual(values = c('black','grey20','grey60','grey80')) + 
   #scale_linetype_manual(values = c('solid','dashed','solid','dashed')) + 
-  geom_text_repel(data = phenology_error_model_labels, aes(x=flowering_lengths + 0.5, label=model), 
+  geom_text_repel(data = phenology_error_model_labels, aes(x=flowering_lengths + 0.5, label=stringr::str_wrap(model, 10)), 
                   size=4,fontface='bold', family='sans',
                   xlim=c(62,70), hjust=0, min.segment.length = 0.1) + 
-  scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,74),
+  scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,70),
                      minor_breaks = c()) + 
   facet_wrap(~facet_label, scales='free', ncol=2) +
   theme_bw(base_size = 20) +
@@ -72,11 +73,25 @@ ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
 
 ##############################################################
 
-sampling_error_means = model_errors %>%
-  group_by(model, sample_size, clustering) %>%
-  summarise(rmse = mean(rmse)) %>%
-  ungroup()
-sampling_error_means$clustering = factor(sampling_error_means$clustering , levels = c(TRUE, FALSE), labels = c('A.     Clustered Sampling','B.     Non-Clustered Sampling'))
+sampling_error_facet_labels = tribble(
+  ~spatial_gradient_types, ~clustering, ~facet_label,~facet_order,
+  'linear',FALSE,     'A.  Moderate Linear Gradient\n   Non-Clustered Sampling', 1, 
+  'non-linear',FALSE, 'B.  Moderate Non-Linear Gradient\n Non-Clustered Sampling', 2,
+  'linear',TRUE,      'C.  Moderate Linear Gradient\n Clustered Sampling', 3, 
+  'non-linear',TRUE,  'D.  Moderate Non-Linear Gradient\n Clustered Sampling', 4
+)
+
+sampling_error_means = best_model_errors %>%
+  filter(round(flowering_gradients,1) == 33.6, flowering_lengths == 30) %>%
+  group_by(model, spatial_gradient_types, sample_size, clustering) %>%
+  summarise(rmse = mean(rmse), n=n()) %>%
+  ungroup() %>%
+  left_join(sampling_error_facet_labels, by=c('spatial_gradient_types','clustering')) %>%
+  mutate(facet_label = forcats::fct_reorder(facet_label, facet_order))
+
+# sampling_error_means$clustering = factor(sampling_error_means$clustering , levels = c(TRUE, FALSE), labels = c('Clustered Sampling','Non-Clustered Sampling'))
+# sampling_error_means$spatial_gradient_types = factor(sampling_error_means$spatial_gradient_types, levels = c('linear','non-linear'),
+#                                                      labels = c('Moderate Linear Gradient','Moderate Non-Linear Gradient'))
 
 sampling_error_model_labels = sampling_error_means %>%
   group_by(model, clustering) %>%
@@ -87,12 +102,12 @@ ggplot(sampling_error_means, aes(x=sample_size, y=rmse, color=model)) +
   geom_line(size=3) +
   #scale_color_brewer(palette = 'Dark2') + 
   scale_color_manual(values = c('black','#0072B2','#E69F00')) +
-  geom_text_repel(data = sampling_error_model_labels, aes(x=sample_size + 0.5, label=model),
-                  size=4, fontface='bold', family='sans',
+  geom_text_repel(data = sampling_error_model_labels, aes(x=sample_size + 0.5, label=stringr::str_wrap(model, 10)),
+                  size=5, fontface='bold', family='sans',
                   xlim=c(1200,1500), hjust=0, min.segment.length = 1) + 
   scale_x_continuous(breaks=c(150,300,600,1200), limits = c(150, 1500),
                      minor_breaks = c()) + 
-  facet_wrap(~clustering) +
+  facet_wrap(~facet_label) +
   theme_bw(base_size = 20) + 
   theme(axis.text = element_text(size=18),
         strip.text = element_text(size=20),
