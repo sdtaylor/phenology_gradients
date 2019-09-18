@@ -1,9 +1,8 @@
 library(tidyverse)
 library(snakecase)
 library(janitor)
-library(ggforce)
 ##############
-# Produce the discssion figure comparing sample sizes of different data sources over time.
+# Produce the discussion figure comparing sample sizes of different data sources over time.
 ##############
 
 inat_observations = read_csv('~/data/phenology_gradients/inaturalist_metadata.csv') %>%
@@ -32,27 +31,33 @@ idigbio_observations = read_csv('~/data/phenology_gradients/idigbio_data/maianth
 all_data = inat_observations %>%
   bind_rows(npn_observations) %>%
   bind_rows(idigbio_observations) %>%
-  count(data_source, species, year)
+  count(data_source, species, year) 
 
+all_data$species = factor(all_data$species, levels = c('Rudbeckia hirta','Maianthemum canadense'),
+                                            labels = c("bold(A.)~italic('Rudbeckia hirta')","bold(B.)~italic('Maianthemum canadense')"))
 
-ggplot(all_data, aes(x=year, y=n, color=data_source, linetype = species)) + 
+discussion_figure = ggplot(all_data, aes(x=year, y=n, color=data_source)) + 
   geom_line(size=2) +
+  geom_point(size=4) +
   #scale_y_log10(limits = c(1, 5000)) + 
-  scale_y_continuous(breaks = c(0,100,500,1000,1500,2000), minor_breaks = c(50,250, 750, 1250)) + 
-  scale_x_continuous(breaks = c(seq(1950,2009,10),c(2010,2015,2019)), limits = c(1950,2019)) +  
+  scale_y_continuous(breaks = c(0,250,500,1000,1500,2000), minor_breaks = c(125,250, 750, 1250)) + 
+  scale_x_continuous(breaks = c(seq(2000,2018,4),c(2019)), limits = c(2000,2019)) +  
   #ggthemes::scale_color_colorblind() +
   scale_color_manual(values = c('grey30', "#009E73", "#E69F00")) + 
-  scale_linetype_manual(values = c('solid','dotted')) + 
-  #facet_wrap(~species, ncol=1) + 
+  #scale_linetype_manual(values = c('solid','dotted')) + 
+  facet_wrap(~species, ncol=1, labeller = label_parsed) + 
   theme_bw() +
-  theme(legend.position = c(0.2, 0.6),
+  theme(legend.position = c(0.31, 0.85),
         legend.background = element_rect(color='black', size=0.5),
-        legend.title = element_text(size=20),
-        legend.text = element_text(size=18),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size=12),
+        strip.background = element_blank(),
+        strip.text = element_text(hjust = 0, size=16),
         panel.background  = element_rect(color='black', size=0.7),
-        axis.text = element_text(size=16, color='black'),
+        axis.text.y = element_text(size=12, color='black'),
+        axis.text.x = element_text(size=14, color='black'),
         axis.title = element_text(size=20, color='black')) +
-  labs(y='Samples Per Year', x='') +
-  guides(color=guide_legend(title = 'Data Source', override.aes = list(size=3), keywidth = unit(40,'mm')),
-         linetype = guide_legend(title = 'Species', override.aes = list(size=2), keywidth = unit(40,'mm')))
-          
+  labs(y='Samples Per Year', x='Year') +
+  guides(color=guide_legend(title = 'Data Source', override.aes = list(size=3), keywidth = unit(40,'mm'), reverse = T))
+
+ggsave(plot = discussion_figure, filename = 'manuscript/figs/fig5_data_sample_sizes.png', height=14, width = 14, units = 'cm', dpi = 300)
