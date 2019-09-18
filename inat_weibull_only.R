@@ -91,8 +91,8 @@ combined_estimates = phenocam_onset %>%
 
 combined_estimates$site_type = factor(combined_estimates$site_type,
                                       levels = c('DB','GR'),
-                                      labels = c('Decid. Broadleaf\nM. canadense',
-                                                 'Grassland\nR. hirta'))
+                                      labels = c('atop("Decid. Broadleaf",italic("M. canadense"))',
+                                                 'atop("Grassland",italic("R. hirta"))'))
 
 # Average delay between phenocam greenup and the species flowering across all years, sites
 combined_estimates %>%
@@ -137,7 +137,7 @@ ggplot(combined_estimates, aes(x=doy, y=lat + y_nudge, color=as.factor(site))) +
   #scale_color_brewer(palette = 'Dark2', direction = -1) + 
   scale_x_continuous(breaks=c(1,100,200)) + 
   coord_cartesian(xlim = c(1,310)) + 
-  facet_grid(site_type~year, scales='free') +
+  facet_grid(site_type~year, scales='free', labeller = label_parsed) +
   #facet_wrap(site_type~year, nrow=2) + 
   theme_bw(25) +
   theme(legend.position = 'bottom') +
