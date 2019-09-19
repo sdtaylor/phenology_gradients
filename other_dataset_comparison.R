@@ -5,6 +5,8 @@ library(janitor)
 # Produce the discussion figure comparing sample sizes of different data sources over time.
 ##############
 
+# note this data is from the initial pull from inaturalist.org, thus contains
+# *all* research grade observations for the 2 spp
 inat_observations = read_csv('~/data/phenology_gradients/inaturalist_metadata.csv') %>%
   mutate(year = lubridate::year(date),
          data_source = 'iNaturalist',
