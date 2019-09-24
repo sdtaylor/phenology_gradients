@@ -105,8 +105,22 @@ combined_estimates %>%
 
 
 # Sample sizes for inat data
-inat_data %>%
-  count(species, year)
+inat_yearly_summaries = inat_data %>%
+  group_by(species, year) %>%
+  summarise(n=n(),
+            mean_doy = mean(doy),
+            yearly_onset_estimate = phest::weib.limit(doy, k=50)[1]) %>%
+  ungroup() %>%
+  mutate(sample_size_label_y = 47,
+         sample_size_label_x = ifelse(year==2019,40,250)) %>%
+  mutate(sample_size_label = paste0('n=',n))
+
+# match up with the site type, species labels for the faceting
+inat_yearly_summaries$site_type = factor(inat_yearly_summaries$species,
+                                      levels = c('Maianthemum canadense','Rudbeckia hirta'),
+                                      labels = c('atop("Decid. Broadleaf",italic("M. canadense"))',
+                                                 'atop("Grassland",italic("R. hirta"))'))
+
 
 site_labels = combined_estimates %>%
   filter(year==2019, source == 'iNat model') %>%
@@ -117,20 +131,19 @@ site_labels = combined_estimates %>%
            TRUE ~ 0
          ))
 
-x_scale_filler = combined_estimates %>%
-  select(year, site_type) %>%
-  distinct() %>%
-  mutate(doy = ifelse(year==2019, 300, 200),
-         y_nudge = 0, lat=42)
-
-ggplot(combined_estimates, aes(x=doy, y=lat + y_nudge, color=as.factor(site))) + 
+ggplot(combined_estimates, aes(x=doy, y=lat + y_nudge, color=interaction(site, site_type))) + 
   geom_errorbarh(aes(xmax = doy_high, xmin=doy_low), size=1.5, height=0) +
   scale_linetype_manual(values=c('dashed','solid')) + 
   geom_point(aes(shape=source), size=6) +
   geom_point(aes(shape=source), size=3, color='white') + 
   scale_shape_manual(values = c(16,17)) +
-  #geom_point(data = x_scale_filler, color='red', size=0.1) + 
-  #geom_point(aes(shape=source), size=2, color='black') +
+  scale_color_manual(values = c("#56B4E9","#E69F00", "#009E73", "#0072B2", "#D55E00", "#CC79A7","#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7")) + 
+  geom_label(data = inat_yearly_summaries, 
+             aes(x=sample_size_label_x, y=sample_size_label_y, label = sample_size_label), 
+             size=5,
+             inherit.aes = F) + 
+  geom_vline(data = inat_yearly_summaries, aes(xintercept = mean_doy),
+             linetype='dotted', size=2) +
   geom_label(data = site_labels, aes(label=site), 
              size=4,hjust=0, fontface='bold') + 
   #ggthemes::scale_color_gdocs() + 
@@ -138,7 +151,6 @@ ggplot(combined_estimates, aes(x=doy, y=lat + y_nudge, color=as.factor(site))) +
   scale_x_continuous(breaks=c(1,100,200)) + 
   coord_cartesian(xlim = c(1,310)) + 
   facet_grid(site_type~year, scales='free', labeller = label_parsed) +
-  #facet_wrap(site_type~year, nrow=2) + 
   theme_bw(25) +
   theme(legend.position = 'bottom') +
   guides(shape = guide_legend(),
