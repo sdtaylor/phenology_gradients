@@ -3,20 +3,22 @@ library(ggrepel)
 
 source('config.R')
 
-simulation_metadata = read_csv('results/models/2019-09-12-2208/simulation_metadata.csv')
-all_model_errors = read_csv('results/models/2019-09-12-2208/all_errors.csv')
+simulation_metadata = read_csv('results/models/2019-09-16-1739/simulation_metadata.csv')
+all_model_errors = read_csv('results/models/2019-09-16-1739/all_errors.csv')
 
-# For each simulation run, pick the models best performance from their best parameters used
-best_model_errors = all_model_errors %>%
-  group_by(model, simulation_id) %>%
-  top_n(1, -rmse) %>%
-  ungroup()
+# For every suite of 100 phenology/sampling simulations, get the average error for a particular
+# weibull model parameter set (identified by model id), and then find the best parameter set for each unique simulation. 
+# For the best ones, do not consider ones where > 10% of predictions were NA (usually happens when there aren't enough boxes.)
+model_avg_errors = all_model_errors %>%
+  left_join(simulation_metadata, by='simulation_id') %>%
+  group_by(model, model_id, sample_size, clustering, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
+  summarise(rmse = mean(rmse, na.rm=T), 
+            bias = mean(bias, na.rm=T),
+            percent_na =  mean(percent_na),
+            n=n()) %>%
+  ungroup() 
 
-# attach simulation info, such as phenology length, sample size, etc. 
-best_model_errors = best_model_errors %>%
-  left_join(simulation_metadata, by='simulation_id')
-
-best_model_errors$model = factor(best_model_errors$model, levels = c('linear','weibull_grid'),
+model_avg_errors$model = factor(model_avg_errors$model, levels = c('linear','weibull_grid'),
                                                 labels = c('Naive Model','Weibull Grid'))
 
 ##############################################################
