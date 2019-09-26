@@ -23,7 +23,9 @@ model_avg_errors$model = factor(model_avg_errors$model, levels = c('linear','wei
 
 ##############################################################
 ##############################################################
-# make average error plots centered around the 1) underlying phenology, 2) sampling
+# Primary simulation result figures.
+#
+# Errors for 1) underlying phenology, and 2) sampling scenarios
 ##############################################################
 phenology_error_facet_labels = tribble(
   ~spatial_gradient_types, ~flowering_gradients, ~facet_label,~facet_order,
@@ -35,12 +37,16 @@ phenology_error_facet_labels = tribble(
   'non-linear',67.2, 'F.    Strong Non-Linear Gradient', 6
 )
 
-phenology_error_means =  best_model_errors %>%
+# find the top model for all underlying phenology combinations for sample size of 300 and with clustering
+phenology_error_means =  model_avg_errors %>%
   filter(sample_size == 300, clustering == T) %>%
   group_by(model, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
-  summarise(rmse = mean(rmse), n=n()) %>%
+  top_n(1, -rmse) %>%
   ungroup() %>%
-  mutate(flowering_gradients = round(flowering_gradients,1)) %>%
+  group_by(model, model_id, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
+  summarise(rmse = mean(rmse), n=n(), bias=mean(bias), percent_na = mean(percent_na)) %>%
+  ungroup() %>%
+  mutate(flowering_gradients = round(flowering_gradients,1)) %>% # round these so it joings correctly in the next line
   left_join(phenology_error_facet_labels, by=c('spatial_gradient_types','flowering_gradients')) %>%
   mutate(facet_label = forcats::fct_reorder(facet_label, facet_order))
 
@@ -51,6 +57,7 @@ phenology_error_model_labels = phenology_error_means %>%
 
 ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
   geom_line(size=2) +
+  geom_point(size=3) +
   #scale_color_brewer(palette = 'Dark2') + 
   scale_color_manual(values = c('black','#0072B2','#E69F00')) +
   #scale_color_manual(values = viridis::magma(4, end=0.8)) + 
@@ -62,7 +69,8 @@ ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
                   xlim=c(62,70), hjust=0, min.segment.length = 0.1) + 
   scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,70),
                      minor_breaks = c()) + 
-  facet_wrap(~facet_label, scales='free', ncol=2) +
+  coord_cartesian(ylim=c(0,16)) + 
+  facet_wrap(~facet_label, ncol=2) +
   theme_bw(base_size = 20) +
   theme(legend.position = 'none',
         legend.title = element_blank(),
@@ -78,15 +86,20 @@ ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
 sampling_error_facet_labels = tribble(
   ~spatial_gradient_types, ~clustering, ~facet_label,~facet_order,
   'linear',FALSE,     'A.  Moderate Linear Gradient\n   Non-Clustered Sampling', 1, 
-  'non-linear',FALSE, 'B.  Moderate Non-Linear Gradient\n Non-Clustered Sampling', 2,
-  'linear',TRUE,      'C.  Moderate Linear Gradient\n Clustered Sampling', 3, 
+  'linear',TRUE,      'B.  Moderate Linear Gradient\n Clustered Sampling', 2, 
+  'non-linear',FALSE, 'C.  Moderate Non-Linear Gradient\n Non-Clustered Sampling', 3,
   'non-linear',TRUE,  'D.  Moderate Non-Linear Gradient\n Clustered Sampling', 4
 )
 
-sampling_error_means = best_model_errors %>%
+# find the top model for all sampling scenarios, but only within a flowering length of 30 and strength of 33.6
+# still incorportating linear/nonlinear gradient here
+sampling_error_means = model_avg_errors %>%
   filter(round(flowering_gradients,1) == 33.6, flowering_lengths == 30) %>%
   group_by(model, spatial_gradient_types, sample_size, clustering) %>%
-  summarise(rmse = mean(rmse), n=n()) %>%
+  top_n(1, -rmse) %>%
+  ungroup() %>%
+  group_by(model,model_id, spatial_gradient_types, sample_size, clustering) %>%
+  summarise(rmse = mean(rmse), bias=mean(bias), n=n()) %>%
   ungroup() %>%
   left_join(sampling_error_facet_labels, by=c('spatial_gradient_types','clustering')) %>%
   mutate(facet_label = forcats::fct_reorder(facet_label, facet_order))
@@ -101,7 +114,8 @@ sampling_error_model_labels = sampling_error_means %>%
   ungroup()
 
 ggplot(sampling_error_means, aes(x=sample_size, y=rmse, color=model)) + 
-  geom_line(size=3) +
+  geom_line(size=2) +
+  geom_point(size=3) +
   #scale_color_brewer(palette = 'Dark2') + 
   scale_color_manual(values = c('black','#0072B2','#E69F00')) +
   geom_text_repel(data = sampling_error_model_labels, aes(x=sample_size + 0.5, label=stringr::str_wrap(model, 10)),
