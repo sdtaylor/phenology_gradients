@@ -8,11 +8,11 @@ inat_years = c(2016,2017,2018,2019)
 # Rudbeckia: long flowering season, very large range = moderate spatial gradient, potentially relatively linear
 #               weibull_box_size =  extent of 30x25, 10 = mean(c(30,20) * .4) (0.4 box size is best here)
 # Maianthemum: short flowering season, small range (mostly NE/Great lakes) = weak spatial gradient, potentially non-linear
-#               weibull_box_size =  extent of 35x15, 10 = mean(c(25,10) * .4) (0.4 box size is best here)
+#               weibull_box_size =  extent of 35x15, 10 = mean(c(35,15) * .4) (0.4 box size is best here)
 inat_model_params = tribble(
-  ~species,         ~site_type, ~idw_power, ~bisq_distance, ~weibull_grid_box_size, ~weibull_grid_buffer, ~weibull_grid_xlimits, ~weibull_grid_ylimits,
-  'Rudbeckia hirta', 'GR',      2,          15,             4,                   0,                  c(-100,-70),            c(25,50),
-  'Maianthemum canadense', 'DB',2,          5,              5,                   0,                  c(-95,-60),             c(35,50)
+  ~species,         ~site_type, ~weibull_grid_box_size, ~weibull_grid_buffer, ~weibull_grid_xlimits, ~weibull_grid_ylimits, ~total_area,
+  'Rudbeckia hirta', 'GR',      10,                     0,                     c(-100,-70),           c(25,50),              750,
+  'Maianthemum canadense', 'DB',10,                     0,                     c(-95,-60),            c(35,50),              525
 )
 
 #inat_data = read_csv('~/data/inat/all_observations.csv') %>%
@@ -44,7 +44,7 @@ for(this_species in inat_species){
     weibull_grid_model = weibull_grid(doy_points = this_spp_data,
                                               xlimits = this_species_params$weibull_grid_xlimits[[1]],
                                               ylimits = this_species_params$weibull_grid_ylimits[[1]],
-                                              stratum_size_x = 5,
+                                              stratum_size_x = 3,
                                               stratum_size_y = 3,
                                               boxes_per_stratum = 40,
                                               box_size = this_species_params$weibull_grid_box_size,
@@ -111,6 +111,8 @@ inat_yearly_summaries = inat_data %>%
             mean_doy = mean(doy),
             yearly_onset_estimate = phest::weib.limit(doy, k=50)[1]) %>%
   ungroup() %>%
+  left_join(select(inat_model_params, species, total_area), by='species') %>% # add this to get total area
+  mutate(observation_density = n/ total_area) %>%
   mutate(sample_size_label_y = 47,
          sample_size_label_x = ifelse(year==2019,40,250)) %>%
   mutate(sample_size_label = paste0('n=',n))
@@ -142,8 +144,8 @@ ggplot(combined_estimates, aes(x=doy, y=lat + y_nudge, color=interaction(site, s
              aes(x=sample_size_label_x, y=sample_size_label_y, label = sample_size_label), 
              size=5,
              inherit.aes = F) + 
-  geom_vline(data = inat_yearly_summaries, aes(xintercept = mean_doy),
-             linetype='dotted', size=2) +
+  #geom_vline(data = inat_yearly_summaries, aes(xintercept = yearly_onset_estimate),
+  #            linetype='dotted', size=2) +
   geom_label(data = site_labels, aes(label=site), 
              size=4,hjust=0, fontface='bold') + 
   #ggthemes::scale_color_gdocs() + 
