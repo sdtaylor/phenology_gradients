@@ -104,10 +104,6 @@ sampling_error_means = model_avg_errors %>%
   left_join(sampling_error_facet_labels, by=c('spatial_gradient_types','clustering')) %>%
   mutate(facet_label = forcats::fct_reorder(facet_label, facet_order))
 
-# sampling_error_means$clustering = factor(sampling_error_means$clustering , levels = c(TRUE, FALSE), labels = c('Clustered Sampling','Non-Clustered Sampling'))
-# sampling_error_means$spatial_gradient_types = factor(sampling_error_means$spatial_gradient_types, levels = c('linear','non-linear'),
-#                                                      labels = c('Moderate Linear Gradient','Moderate Non-Linear Gradient'))
-
 sampling_error_model_labels = sampling_error_means %>%
   group_by(model, clustering) %>%
   filter(sample_size == max(sample_size)) %>%
@@ -140,6 +136,7 @@ ggplot(sampling_error_means, aes(x=sample_size, y=rmse, color=model)) +
 #
 # Same plots as above, but only show the weibull errors,
 # and have labels showing the weibull grid parameters which generated those errors.
+# Also a table showing *all* errors.
 ################################################
 
 #####
@@ -229,3 +226,36 @@ ggplot(sampling_scenario_best_model_parameters,aes(x=sample_size, y=rmse, color=
   labs(x='Sample Size', y='Bias', color='')
   
 ##############################################################
+# Supplemental table showing the best error for each sampling x phenology scenarios
+
+library(kableExtra)
+
+model_avg_errors %>%
+  filter(sample_size == 300, clustering == T) %>%
+  group_by(model, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
+  top_n(1, -rmse) %>%
+  ungroup()
+
+best_model_error_for_all_simulations = model_avg_errors %>%
+  select(-model_id, -bias, -percent_na) %>%
+  group_by(model, sample_size, clustering, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
+  top_n(1, -rmse) %>%
+  ungroup()
+
+
+error_table_data = best_model_error_for_all_simulations %>%
+  spread(model, rmse) %>%
+  rename(linear = 'Naive Model', weibull_grid = 'Weibull Grid') %>%
+  mutate(error = paste0(round(weibull_grid,1), ' (',round(linear,1),')')) %>%
+  mutate(weibull_is_better = weibull_grid < linear) %>%
+  mutate(error = ifelse(weibull_is_better, paste0('\\textbf{',error,'}'), error)) %>% # add latex bold to entries where weibull < linear
+  select(clustering, spatial_gradient_types, flowering_gradients, flowering_lengths, sample_size, error) %>%
+  spread(sample_size, error) %>%
+  arrange(clustering, spatial_gradient_types, flowering_gradients, flowering_lengths)
+
+error_table_data %>%
+  select(-clustering) %>%
+  kable(format = 'latex', escape=F) %>%
+  add_header_above(c(' ' = 3, 'Sample Size' = 4)) %>%
+  pack_rows('Clustered Sampling', 1, 24) %>%
+  pack_rows('Non-Clustered Sampling', 25,48)
