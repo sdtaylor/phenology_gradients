@@ -22,7 +22,7 @@ npn_observations = read_csv('./data/npn_data/status_intensity_observation_data.c
   select(species, year, latitude=Latitude, longitude=Longitude, data_source)
 
 idigbio_observations = read_csv('./data/idigbio_data/maianthemum/occurrence.csv.zip') %>%
-  bind_rows(read_csv('./data/idigbio_data/rudbeckia/occurrence.csv', col_types = cols('dwc:fieldNumber'='c'))) %>%
+  bind_rows(read_csv('./data/idigbio_data/rudbeckia/occurrence.csv.zip', col_types = cols('dwc:fieldNumber'='c'))) %>%
   janitor::clean_names() %>% # ugh, there are : in the column names
   filter(dwc_basis_of_record == 'preservedspecimen') %>% # herbarium specimens only
   mutate(species = snakecase::to_sentence_case(gbif_canonical_name),
