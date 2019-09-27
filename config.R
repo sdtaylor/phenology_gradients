@@ -6,7 +6,7 @@
 ####################################
 # global config stuff
 ####################################
-data_folder = '/home/shawn/data/phenology_gradients/'
+photo_folder = '/home/shawn/data/phenology_gradients/photos/'
 
 
 ###################################

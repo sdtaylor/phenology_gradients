@@ -29,20 +29,20 @@ drop_non_inat_photos = function(metadata){
 
 #######################################
 
-rudbeckia = read_csv(paste0(data_folder, 'inat_rudbeckia_hirta.csv')) %>%
+rudbeckia = read_csv('./data/raw_inat_data/inat_rudbeckia_hirta.csv') %>%
   filter(quality_grade=='research') %>%
   filter(longitude >= -100) %>%
   filter(positional_accuracy < 50*100) %>%
   rename(inat_id = id)
 
-rudbeckia = download_images(rudbeckia, save_dir = paste0(data_folder, 'photos/rudbeckia/'))
+# rudbeckia = download_images(rudbeckia, save_dir = paste0(photo_folder, 'rudbeckia/'))
 
-maianthemum = read_csv(paste0(data_folder, 'inat_maianthemum_canadense.csv')) %>%
+maianthemum = read_csv('./data/raw_inat_data/inat_maianthemum_canadense.csv') %>%
   filter(quality_grade=='research') %>%
   filter(positional_accuracy < 50*100) %>%
   rename(inat_id = id)
 
-maianthemum = download_images(maianthemum, save_dir = paste0(data_folder, 'photos/maianthemum/'))
+# maianthemum = download_images(maianthemum, save_dir = paste0(photo_folder, 'maianthemum/'))
 
 
 all_metadata = rudbeckia %>%
@@ -50,4 +50,4 @@ all_metadata = rudbeckia %>%
   select(inat_id, date = observed_on, latitude, longitude, positional_accuracy, scientific_name)
 
 
-write_csv(all_metadata, paste0(data_folder, 'inaturalist_metadata.csv'))
+write_csv(all_metadata, './data/raw_inat_data/inaturalist_metadata.csv')

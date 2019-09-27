@@ -8,21 +8,21 @@ library(jsonlite)
 
 # note this data is from the initial pull from inaturalist.org, thus contains
 # *all* research grade observations for the 2 spp
-inat_observations = read_csv('~/data/phenology_gradients/inaturalist_metadata.csv') %>%
+inat_observations = read_csv('./data/raw_inat_data/inaturalist_metadata.csv') %>%
   mutate(year = lubridate::year(date),
          data_source = 'iNaturalist',
          species = stringr::word(scientific_name, 1,2)) %>%
   select(species, year, latitude, longitude, data_source)
 
-npn_observations = read_csv('~/data/phenology_gradients/npn_data/status_intensity_observation_data.csv') %>%
+npn_observations = read_csv('./data/npn_data/status_intensity_observation_data.csv.zip') %>%
   filter(Phenophase_ID == 501) %>%
   mutate(year = lubridate::year(Observation_Date),
          species = paste(Genus, Species),
          data_source = 'USA-NPN') %>%
   select(species, year, latitude=Latitude, longitude=Longitude, data_source)
 
-idigbio_observations = read_csv('~/data/phenology_gradients/idigbio_data/maianthemum/occurrence.csv') %>%
-  bind_rows(read_csv('~/data/phenology_gradients/idigbio_data/rudbeckia/occurrence.csv', col_types = cols('dwc:fieldNumber'='c'))) %>%
+idigbio_observations = read_csv('./data/idigbio_data/maianthemum/occurrence.csv.zip') %>%
+  bind_rows(read_csv('./data/idigbio_data/rudbeckia/occurrence.csv', col_types = cols('dwc:fieldNumber'='c'))) %>%
   janitor::clean_names() %>% # ugh, there are : in the column names
   filter(dwc_basis_of_record == 'preservedspecimen') %>% # herbarium specimens only
   mutate(species = snakecase::to_sentence_case(gbif_canonical_name),

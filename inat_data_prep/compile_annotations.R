@@ -3,7 +3,7 @@ source('config.R')
 
 # Combine the direction annotations from ImageAnt with the full iNaturalist metadata
 # to get the iNat data used for analysis. 
-inat_metadata = read_csv(paste0(data_folder, 'inaturalist_metadata.csv'), col_types = cols('inat_id'='c')) %>%
+inat_metadata = read_csv('./data/raw_inat_data/inaturalist_metadata.csv', col_types = cols('inat_id'='c')) %>%
   mutate(species = word(scientific_name, 1,2)) %>%
   select(-scientific_name)
 
@@ -19,4 +19,4 @@ inat_data = inat_metadata %>%
   mutate(year = lubridate::year(date),
          doy  = lubridate::yday(date))
 
-write_csv(inat_data, 'data/all_inat_data.csv')
+write_csv(inat_data, 'data/processed_inat_data.csv')
