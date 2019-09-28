@@ -58,18 +58,12 @@ phenology_error_model_labels = phenology_error_means %>%
 ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
   geom_line(size=2) +
   geom_point(size=3) +
-  #scale_color_brewer(palette = 'Dark2') + 
   scale_color_manual(values = c('black','#0072B2','#E69F00')) +
-  #scale_color_manual(values = viridis::magma(4, end=0.8)) + 
-  #scale_color_viridis_d(end = 0.9) + 
-  #scale_color_manual(values = c('black','grey20','grey60','grey80')) + 
-  #scale_linetype_manual(values = c('solid','dashed','solid','dashed')) + 
   geom_text_repel(data = phenology_error_model_labels, aes(x=flowering_lengths + 0.5, label=stringr::str_wrap(model, 10)), 
                   size=4,fontface='bold', family='sans',
                   xlim=c(62,70), hjust=0, min.segment.length = 0.1) + 
   scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,70),
                      minor_breaks = c()) + 
-  coord_cartesian(ylim=c(0,16)) + 
   facet_wrap(~facet_label, ncol=2) +
   theme_bw(base_size = 20) +
   theme(legend.position = 'none',
@@ -223,7 +217,7 @@ ggplot(sampling_scenario_best_model_parameters,aes(x=sample_size, y=rmse, color=
         legend.background = element_rect(color='black'),
         legend.title = element_blank(),
         legend.justification = 'center') + 
-  labs(x='Sample Size', y='Bias', color='')
+  labs(x='Sample Size', y='RMSE', color='')
   
 ##############################################################
 # Supplemental table showing the best error for each sampling x phenology scenarios
