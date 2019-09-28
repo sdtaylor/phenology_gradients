@@ -31,7 +31,7 @@ phenocam_site_info = phenocam_data %>%
 ###################################################################
 
 inat_model_estimates = tibble()
-set.seed(1234)
+set.seed(12345)
 for(this_species in inat_species){
   this_species_params = inat_model_params %>%
     filter(species == this_species)
@@ -101,7 +101,9 @@ combined_estimates %>%
   rename(inat = 'iNat model', phenocam = 'Phenocam Transitions') %>%
   mutate(difference = inat - phenocam) %>%
   group_by(site_type) %>%
-  summarise(mean_diff = mean(difference, na.rm=T))
+  summarise(mean_diff = mean(difference, na.rm=T),
+            min_diff = min(difference, na.rm=T),
+            max_diff = max(difference, na.rm=T))
 
 
 # Sample sizes for inat data
@@ -154,7 +156,8 @@ ggplot(combined_estimates, aes(x=doy, y=lat + y_nudge, color=interaction(site, s
   coord_cartesian(xlim = c(1,310)) + 
   facet_grid(site_type~year, scales='free', labeller = label_parsed) +
   theme_bw(25) +
-  theme(legend.position = 'bottom') +
+  theme(legend.position = 'bottom',
+        strip.background = element_rect(fill='grey95')) +
   guides(shape = guide_legend(),
          color = FALSE) + 
   labs(y='Latitude',x='Day Of Year (DOY)', 
