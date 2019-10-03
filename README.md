@@ -12,4 +12,34 @@ Data sources:
 [Phenocam](https://phenocam.sr.unh.edu/webcam/)  
 [USA National Phenology Network*](https://www.usanpn.org)  
 [iDigBio*](https://www.idigbio.org)  
-*These data sources were only used to show historic trends in data collection, not in the main analysis.
+*These data sources were only used to show historic trends in data collection, not in the main analysis.  
+
+### Repository files
+
+`data/` : All original data used in the analysis. 
+
+`results/` : Results from the simulation analysis
+
+`inat_data_prep/` : Scripts and config files for downloading and scoring the iNaturalist photographs for the two species.
+
+`prior_study_phenology` : Notes and data on prior measurements of onset for the two species analysed.
+
+`install_packages.R` : Install the packages used in this analysis
+
+`config.R` : Setup for the simulation analysis parameters. 
+
+`run_estimators.R` : Runs the simulation analysis. 
+
+`analysis_simulation_errors.R` : Produce the figures and tables related to the simulations. 
+
+`conceptual_figures.R` : Create Figure 1 from the introduction.
+
+`phenocam_site_explore.R` : Mapping out the different phenocam sites for selection.
+
+`process_phenocam_data.R` : Downloading and process the phenocam data used in the analysis
+
+`inaturalist_onset_models.R` : Fit the iNaturalist models for the 2 species and create the figure comparing them to phenocam onset
+
+`supplemental_figure_simulation_example.R` : Create the supplemental figures showing the example simulations.
+
+`other_dataset_comparison.R` : Create Figure 5 showing the sample size of different data sources over time.
