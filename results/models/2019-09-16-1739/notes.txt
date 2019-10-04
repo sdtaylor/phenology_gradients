@@ -1,0 +1,10 @@
+
+using more realistic gradients with landsat start of season estimates from Melaas et al. 2018 data (10.1002/2017GL076933)
+add non-linear spatial gradients
+fixed non-linear spatial gradient reproducebility
+fixed seed issues
+changed mean estimate to median
+
+added other models
+removed other models and added stratum size to the weibull grid test
+removed weibull buffer and added number of boxes to grid test
