@@ -1,5 +1,6 @@
 library(tidyverse)
 #devtools::install_github('sdtaylor/flowergrids')
+source('interpolation_models.R')
 
 source('config.R')
 
@@ -20,6 +21,8 @@ changed mean estimate to median
 
 added other models
 removed other models and added stratum size to the weibull grid test
+
+adding in interpolation models cause of reviewer comments 
 "
 
 cat(model_run_note, file=paste0(model_dir,'notes.txt'))
@@ -45,8 +48,10 @@ write_csv(simulation_combos, paste0(model_dir,'simulation_metadata.csv'))
 
 required_packages =  c('dplyr','tidyr','broom','spatstat','phest')
 
-#all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = required_packages) %dopar% {
-all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = required_packages) %do% {
+all_errors = tibble()
+all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = required_packages) %dopar% {
+#all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_rows, .errorhandling = 'remove', .packages = required_packages) %do% {
+#for(simulation_i in 1:nrow(simulation_combos)){
     
   this_sample_size = simulation_combos$sample_size[simulation_i]
   this_length = simulation_combos$flowering_lengths[simulation_i]
@@ -83,8 +88,8 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
   model_estimates = tibble()
   #############################################
   # The Weibull grid estimator
-  #############################################
-  # Model estimating onset, peak, and end of flowering across space
+  # #############################################
+  # # Model estimating onset, peak, and end of flowering across space
   for(model_i in weibull_model_parameters$model_id){
     params = filter(weibull_model_parameters, model_id == model_i)
     weibull_grid_model = flowergrids::weibull_grid(doy_points = simulated_sample_data,
@@ -93,16 +98,56 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
                                                    edge_buffer = 0,
                                                    stratum_size_x = params$stratum_size,
                                                    stratum_size_y = params$stratum_size)
-  
+
     predictions = prediction_grid %>%
       mutate(onset_estimate = flowergrids::predict.weibull_grid(model = weibull_grid_model, doy_points = ., type='onset')) %>%
       mutate(model_id = model_i,
              model = 'weibull_grid')
-    
+
     model_estimates = model_estimates %>%
       bind_rows(predictions)
   }
 
+  #############################################
+  # The interpolation model using bi-square kernel weights
+  #############################################
+  for(model_i in bisq_model_parameters$model_id){
+    params = filter(bisq_model_parameters, model_id == model_i)
+    interpolation_model = InterpolationEstimator(doy_points = simulated_sample_data,
+                                                 percentile = 0.99,
+                                                 method = 'bisq',
+                                                 bisq_distance = params$b_distance)
+    
+    predictions = prediction_grid %>%
+      mutate(onset_estimate = predict.InterpolationEstimator(model = interpolation_model, doy_points = ., type='onset')) %>%
+      mutate(model_id = model_i,
+             model = 'bisq')
+    
+    model_estimates = model_estimates %>%
+      bind_rows(predictions)
+  }
+  
+  
+  
+  ############################################
+  # The interpolation model using inverse distance weights
+  #############################################
+  for(model_i in idw_model_parameters$model_id){
+    params = filter(idw_model_parameters, model_id == model_i)
+    interpolation_model = InterpolationEstimator(doy_points = simulated_sample_data,
+                                                 percentile = 0.99,
+                                                 method = 'idw',
+                                                 power = params$idw_power)
+    
+    predictions = prediction_grid %>%
+      mutate(onset_estimate = predict.InterpolationEstimator(model = interpolation_model, doy_points = ., type='onset')) %>%
+      mutate(model_id = model_i,
+             model = 'idw')
+    
+    model_estimates = model_estimates %>%
+      bind_rows(predictions)
+  }
+  
   #############################################
   # The linear model
   #############################################
@@ -111,14 +156,14 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
     mutate(onset_estimate = predict(linear_fl_model, newdata = predictions, interval='prediction', level=0.99)[,2]) %>%
     mutate(model_id = 1,
            model = 'linear')
-  
+
   model_estimates = model_estimates %>%
     bind_rows(predictions)
   #############################################
 
   # This makes a cool figure showing rasters for all estimators + the true raster
   # true_dates %>%
-  #   mutate(model_i = 1, model = 'true_dates') %>%
+  #   mutate(model_i = 1, model = 'true_dates') %>% 
   #   rename(onset_estimate = onset) %>%
   #   bind_rows(model_estimates) %>%
   # ggplot(aes(x=x,y=y, fill=onset_estimate)) + 
@@ -138,6 +183,8 @@ all_errors = foreach(simulation_i = 1:nrow(simulation_combos), .combine = bind_r
   
   errors$simulation_id = simulation_id
   
+  # all_errors = all_errors %>%
+  #   bind_rows(errors)
   return(errors)
 }
 
