@@ -3,8 +3,8 @@ library(ggrepel)
 
 source('config.R')
 
-simulation_metadata = read_csv('results/models/2019-09-16-1739/simulation_metadata.csv')
-all_model_errors = read_csv('results/models/2019-09-16-1739/all_errors.csv')
+simulation_metadata = read_csv('results/models/2020-03-05-1001/simulation_metadata.csv')
+all_model_errors = read_csv('results/models/2020-03-05-1001/all_errors.csv')
 
 # For every suite of 100 phenology/sampling simulations, get the average error for a particular
 # weibull model parameter set (identified by model id), and then find the best parameter set for each unique simulation. 
@@ -16,10 +16,11 @@ model_avg_errors = all_model_errors %>%
             bias = mean(bias, na.rm=T),
             percent_na =  mean(percent_na),
             n=n()) %>%
-  ungroup() 
+  ungroup() %>%
+  filter(model %in% c('linear','weibull_grid','bisq'))
 
-model_avg_errors$model = factor(model_avg_errors$model, levels = c('linear','weibull_grid'),
-                                                labels = c('Naive Model','Weibull Grid'))
+model_avg_errors$model = factor(model_avg_errors$model, levels = c('linear','weibull_grid','bisq','idw'),
+                                                labels = c('Naive Model','Weibull Grid','Bi-Squared Interpolation','IDW Interpolation'))
 
 ##############################################################
 ##############################################################
@@ -39,7 +40,7 @@ phenology_error_facet_labels = tribble(
 
 # find the top model for all underlying phenology combinations for sample size of 300 and with clustering
 phenology_error_means =  model_avg_errors %>%
-  filter(sample_size == 300, clustering == T) %>%
+  filter(sample_size == 25, clustering == T) %>%
   group_by(model, flowering_lengths, flowering_gradients, spatial_gradient_types) %>%
   top_n(1, -rmse) %>%
   ungroup() %>%
@@ -58,12 +59,13 @@ phenology_error_model_labels = phenology_error_means %>%
 ggplot(phenology_error_means, aes(y=rmse, x=flowering_lengths, color=model)) +
   geom_line(size=2) +
   geom_point(size=3) +
-  scale_color_manual(values = c('black','#0072B2','#E69F00')) +
+  #scale_color_manual(values = c('black','#0072B2','#E69F00')) +
+  scale_color_brewer(palette = 'Dark2') + 
   geom_text_repel(data = phenology_error_model_labels, aes(x=flowering_lengths + 0.5, label=stringr::str_wrap(model, 10)), 
                   size=4,fontface='bold', family='sans',
                   xlim=c(62,70), hjust=0, min.segment.length = 0.1) + 
-  scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,70),
-                     minor_breaks = c()) + 
+  #scale_x_continuous(breaks=c(15,30,45,60), labels = c(15,30,45,60), limits = c(15,70),
+  #                   minor_breaks = c()) + 
   facet_wrap(~facet_label, ncol=2) +
   theme_bw(base_size = 20) +
   theme(legend.position = 'none',
@@ -111,8 +113,8 @@ ggplot(sampling_error_means, aes(x=sample_size, y=rmse, color=model)) +
   geom_text_repel(data = sampling_error_model_labels, aes(x=sample_size + 0.5, label=stringr::str_wrap(model, 10)),
                   size=5, fontface='bold', family='sans',
                   xlim=c(1200,1500), hjust=0, min.segment.length = 1) + 
-  scale_x_continuous(breaks=c(150,300,600,1200), limits = c(150, 1500),
-                     minor_breaks = c()) + 
+  #scale_x_continuous(breaks=c(150,300,600,1200), limits = c(150, 1500),
+  #                   minor_breaks = c()) + 
   facet_wrap(~facet_label) +
   theme_bw(base_size = 20) + 
   theme(axis.text = element_text(size=18),

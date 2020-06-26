@@ -71,6 +71,8 @@ predict.InterpolationEstimator = function(model,
     estimate = qnorm(lower_p, mean = prediction.mean, sd = sqrt(prediction.var))
   } else if(type == 'end'){
     estimate = qnorm(upper_p, mean = prediction.mean, sd = sqrt(prediction.var))
+  } else if(type == 'peak'){
+    estimate = prediction.mean
   } else {
     stop(paste('unknown prediction type: ',type))
   }

@@ -13,12 +13,12 @@ photo_folder = '/home/shawn/data/phenology_gradients/photos/'
 # stuff affecting runtim and resources in run_estimators.R
 ###################################
 n_cores = 1
-n_bootstrap = 50
+n_bootstrap = 2
 
 ###################################
 # underlying phenology parameters
 ###################################
-flowering_lengths = c(15,30,45,60)
+flowering_lengths = c(15,30,45,60,120,300)
 flowering_gradients = c(
   # slope of lm(sos~latitude) from Melaas et al. 2018 / scale  of simulated scale
   3.36/0.1, 
@@ -30,7 +30,7 @@ spatial_gradient_types = c('linear','non-linear')
 ###################################
 # sampling parameters
 ###################################
-sample_sizes = c(150, 300, 600, 1200)
+sample_sizes = c(25,50,150, 300, 600, 1200)
 clustering = c(TRUE, FALSE)
 
 ########################################

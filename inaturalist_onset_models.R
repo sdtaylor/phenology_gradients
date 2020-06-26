@@ -1,5 +1,6 @@
 library(tidyverse)
 library(flowergrids)
+source('interpolation_models.R')
 
 #inat_species = c('Rudbeckia hirta')
 inat_species = c('Rudbeckia hirta','Maianthemum canadense')
@@ -41,6 +42,19 @@ for(this_species in inat_species){
       filter(species == this_species, year== this_year) %>%
       mutate(x=longitude, y=latitude)
     
+    
+    interpolation_model = InterpolationEstimator(doy_points = this_spp_data,
+                                                 percentile = 0.99,
+                                                 method = 'bisq',
+                                                 bisq_distance = 0.5)
+    
+    predictions = prediction_grid %>%
+      mutate(onset_estimate = predict.InterpolationEstimator(model = interpolation_model, doy_points = ., type='onset')) %>%
+      mutate(model_id = model_i,
+             model = 'bisq')
+    
+    
+    
     weibull_grid_model = weibull_grid(doy_points = this_spp_data,
                                               xlimits = this_species_params$weibull_grid_xlimits[[1]],
                                               ylimits = this_species_params$weibull_grid_ylimits[[1]],
@@ -52,8 +66,10 @@ for(this_species in inat_species){
   
     predictions = phenocam_site_info %>%
       filter(site_type == this_species_params$site_type) %>%
+      mutate(estimate = predict.InterpolationEstimator(interpolation_model, doy_points = ., type = 'peak'))
       group_by(site) %>%
-      do(predict.weibull_grid(weibull_grid_model, doy_points = ., type = 'onset', se=T)) %>%
+     # do(predict.InterpolationEstimator(interpolation_model, doy_points = ., type = 'onset')) %>%
+      do(predict.weibull_grid(weibull_grid_model, doy_points = ., type = 'onset')) %>%
       ungroup() %>%
       rename(doy = estimate, 
              doy_high = estimate_upper,
